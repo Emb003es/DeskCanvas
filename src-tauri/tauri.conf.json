@@ -15,6 +15,8 @@
         "title": "DeskCanvas",
         "width": 1280,
         "height": 800,
+        "minWidth": 1180,
+        "minHeight": 680,
         "dragDropEnabled": false
       }
     ],

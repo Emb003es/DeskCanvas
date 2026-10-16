@@ -153,9 +153,51 @@ function ObjectPanel({ o, ids }: { o: Obj; ids: string[] }) {
   );
 }
 
+const SWATCHES = ["#ffffff", "#2b2730", "#f6d186", "#e27d60", "#f19cb7", "#c9a7e8", "#85cdca", "#7fb685"];
+
+function BrushPanel() {
+  const { tool, brush, setBrush } = useStore();
+  const eraser = tool === "eraser";
+  return (
+    <section>
+      <h3>{eraser ? "Goma" : "Pincel"}</h3>
+      {!eraser && (
+        <>
+          <div className="swatches">
+            {SWATCHES.map((c) => (
+              <button
+                key={c}
+                className={`swatch ${brush.color === c ? "on" : ""}`}
+                style={{ background: c }}
+                onClick={() => setBrush({ color: c })}
+                aria-label={`Color ${c}`}
+              />
+            ))}
+          </div>
+          <Field label="Color">
+            <input type="color" value={hex(brush.color)} onChange={(e) => setBrush({ color: e.target.value })} />
+          </Field>
+        </>
+      )}
+      <Field label={`Grosor ${brush.size}px  ·  teclas + y −`}>
+        <input type="range" min={1} max={200} value={brush.size} onChange={(e) => setBrush({ size: +e.target.value })} />
+      </Field>
+      <Field label={`Opacidad ${Math.round(brush.opacity * 100)}%`}>
+        <input type="range" min={5} max={100} value={Math.round(brush.opacity * 100)} onChange={(e) => setBrush({ opacity: +e.target.value / 100 })} />
+      </Field>
+      <p className="hint">{eraser ? "Borra solo en la capa de dibujo activa." : "Dibuja en la capa de dibujo activa (se crea una si no hay)."}</p>
+    </section>
+  );
+}
+
 export default function Properties() {
   const doc = useDoc();
   const selection = useStore((s) => s.selection);
+  const tool = useStore((s) => s.tool);
   const first = doc && selection.length ? findObj(doc, selection[0]) : undefined;
-  return <div className="props">{first ? <ObjectPanel o={first} ids={selection} /> : <BackgroundPanel />}</div>;
+  return (
+    <div className="props">
+      {tool !== "select" ? <BrushPanel /> : first ? <ObjectPanel o={first} ids={selection} /> : <BackgroundPanel />}
+    </div>
+  );
 }

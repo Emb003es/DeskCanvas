@@ -42,6 +42,11 @@ function useShortcuts() {
         if (k === "delete" || k === "backspace") return s.deleteSelected(), true;
         if (k === "escape") return s.select([]), true;
         if (k === "g" && !ctrl) return s.toggle("grid"), true;
+        if (!ctrl && (k === "v" || k === "b" || k === "e")) return s.setTool(k === "v" ? "select" : k === "b" ? "brush" : "eraser"), true;
+        if (!ctrl && ["[", "]", "+", "-"].includes(k)) {
+          const grow = k === "]" || k === "+";
+          return s.setBrush({ size: Math.max(1, Math.min(200, s.brush.size + (grow ? 4 : -4))) }), true;
+        }
         const arrows: Record<string, [number, number]> = { arrowleft: [-step, 0], arrowright: [step, 0], arrowup: [0, -step], arrowdown: [0, step] };
         if (arrows[k] && s.selection.length) return s.nudge(...arrows[k]), true;
         return false;
@@ -88,6 +93,17 @@ export default function App() {
           </button>
           <button className="icon" onClick={s.redo} disabled={!s.future.length} title="Rehacer (Ctrl+Y)">
             ↷
+          </button>
+        </div>
+        <div className="group tools">
+          <button className={s.tool === "select" ? "toggle on" : "toggle"} onClick={() => s.setTool("select")} title="Seleccionar (V)">
+            ➤
+          </button>
+          <button className={s.tool === "brush" ? "toggle on" : "toggle"} onClick={() => s.setTool("brush")} title="Pincel (B)">
+            🖌
+          </button>
+          <button className={s.tool === "eraser" ? "toggle on" : "toggle"} onClick={() => s.setTool("eraser")} title="Goma (E)">
+            ⌫
           </button>
         </div>
         <div className="group">

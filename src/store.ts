@@ -1,9 +1,11 @@
 import { create } from "zustand";
 import { produce, type Draft } from "immer";
 import { api, DesktopState, Monitor } from "./api";
-import { Background, Doc, Layer, LayerKind, Obj, newDoc, newLayer, newObj, uid } from "./doc";
+import { Background, Doc, Layer, LayerKind, Obj, Stroke, newDoc, newLayer, newObj, uid } from "./doc";
 
 type Pos = { x: number; y: number };
+export type Tool = "select" | "brush" | "eraser";
+export type Brush = { color: string; size: number; opacity: number };
 
 /** Everything undo/redo covers. */
 type Snapshot = { docs: Record<string, Doc>; positions: Record<string, Pos> };
@@ -22,6 +24,8 @@ type State = Snapshot & {
   grid: boolean;
   snap: boolean;
   gridSize: number;
+  tool: Tool;
+  brush: Brush;
 
   load: () => Promise<void>;
   setMonitor: (i: number) => void;
@@ -53,6 +57,11 @@ type State = Snapshot & {
   toggleLayer: (id: string, prop: "visible" | "locked") => void;
   renameLayer: (id: string, name: string) => void;
   toggle: (prop: "grid" | "snap") => void;
+  setTool: (tool: Tool) => void;
+  setBrush: (patch: Partial<Brush>) => void;
+  /** Layer that receives strokes: the active drawing layer, else the topmost unlocked one. */
+  drawingLayerId: () => string | undefined;
+  addStroke: (stroke: Stroke) => void;
 };
 
 export const monitorLabel = (m: Monitor, i: number) =>
@@ -107,6 +116,8 @@ export const useStore = create<State>((set, get) => {
     grid: false,
     snap: true,
     gridSize: 40,
+    tool: "select",
+    brush: { color: "#ffffff", size: 12, opacity: 1 },
 
     load: () =>
       run(async () => {
@@ -317,6 +328,31 @@ export const useStore = create<State>((set, get) => {
       }),
 
     toggle: (prop) => set({ [prop]: !get()[prop] } as Pick<State, typeof prop>),
+
+    setTool: (tool) => set({ tool, selection: tool === "select" ? get().selection : [] }),
+
+    setBrush: (patch) => set({ brush: { ...get().brush, ...patch } }),
+
+    drawingLayerId: () => {
+      const doc = currentDoc(get());
+      const active = doc?.layers.find((l) => l.id === get().activeLayerId);
+      if (active?.kind === "drawing" && !active.locked && active.visible) return active.id;
+      return [...(doc?.layers ?? [])].reverse().find((l) => l.kind === "drawing" && !l.locked && l.visible)?.id;
+    },
+
+    addStroke: (stroke) => {
+      let id = get().drawingLayerId();
+      get().commit((_, doc) => {
+        if (!id) {
+          const layer = newLayer("drawing", "Dibujo");
+          const iconsAt = doc.layers.findIndex((l) => l.kind === "icons");
+          doc.layers.splice(iconsAt < 0 ? doc.layers.length : iconsAt, 0, layer);
+          id = layer.id;
+        }
+        doc.layers.find((l) => l.id === id)?.strokes.push(stroke);
+      });
+      set({ activeLayerId: id });
+    },
   };
 });
 

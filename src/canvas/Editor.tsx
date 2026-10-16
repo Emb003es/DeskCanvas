@@ -1,11 +1,11 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { memo, useCallback, useEffect, useRef, useState } from "react";
 import Konva from "konva";
-import { Group, Image, Layer, Line, Rect, Stage, Text, Transformer } from "react-konva";
+import { Circle, Group, Image, Layer, Line, Rect, Stage, Text, Transformer } from "react-konva";
 import useImageLoader from "./useImage";
 import ObjectNode from "./ObjectNode";
 import { Box, Guide, snapBox } from "./guides";
 import { DesktopIcon, Monitor } from "../api";
-import { Background, Doc, Obj } from "../doc";
+import { Background, Doc, Obj, Stroke } from "../doc";
 import { useDoc, useStore } from "../store";
 
 /** Fits the monitor (physical px) into the available area, keeping aspect ratio. */
@@ -111,6 +111,27 @@ function Grid({ w, h, size }: { w: number; h: number; size: number }) {
   return <>{lines}</>;
 }
 
+const strokeProps = (st: Omit<Stroke, "points">) => ({
+  stroke: st.erase ? "#000" : st.color,
+  strokeWidth: st.size,
+  opacity: st.opacity,
+  lineCap: "round" as const,
+  lineJoin: "round" as const,
+  tension: 0.4,
+  // Erasing only clears pixels of its own layer canvas.
+  globalCompositeOperation: st.erase ? ("destination-out" as const) : ("source-over" as const),
+  listening: false,
+  perfectDrawEnabled: false,
+});
+
+const Strokes = memo(({ strokes }: { strokes: Stroke[] }) => (
+  <>
+    {strokes.map((st, i) => (
+      <Line key={i} points={st.points} {...strokeProps(st)} />
+    ))}
+  </>
+));
+
 export default function Editor({ stageRef }: { stageRef: React.RefObject<Konva.Stage | null> }) {
   const doc = useDoc();
   const s = useStore();
@@ -119,6 +140,11 @@ export default function Editor({ stageRef }: { stageRef: React.RefObject<Konva.S
   const trRef = useRef<Konva.Transformer>(null);
   const others = useRef<Box[]>([]);
   const [guides, setGuides] = useState<Guide[]>([]);
+  // In-progress stroke: points live in a ref and the Line is updated imperatively.
+  const [drawing, setDrawing] = useState<(Omit<Stroke, "points"> & { layerId: string }) | null>(null);
+  const points = useRef<number[]>([]);
+  const liveLine = useRef<Konva.Line>(null);
+  const cursor = useRef<Konva.Circle>(null);
 
   // Attach the transformer to the selected nodes.
   useEffect(() => {
@@ -190,6 +216,42 @@ export default function Editor({ stageRef }: { stageRef: React.RefObject<Konva.S
     if (p) s.addObject({ ...JSON.parse(raw), x: p.x, y: p.y });
   };
 
+  const drawTool = s.tool !== "select";
+
+  const startStroke = () => {
+    const p = stageRef.current?.getRelativePointerPosition();
+    if (!p) return;
+    const erase = s.tool === "eraser";
+    const layerId = s.drawingLayerId();
+    if (erase && !layerId) return s.notify("No hay ninguna capa de dibujo visible y desbloqueada que borrar");
+    points.current = [p.x, p.y, p.x + 0.01, p.y];
+    setDrawing({ layerId: layerId ?? "ui", erase, ...s.brush });
+  };
+
+  const onPointerMove = () => {
+    const p = stageRef.current?.getRelativePointerPosition();
+    if (!p) return;
+    cursor.current?.position(p);
+    cursor.current?.getLayer()?.batchDraw();
+    if (!drawing) return;
+    const pts = points.current;
+    const [lx, ly] = pts.slice(-2);
+    if (Math.hypot(p.x - lx, p.y - ly) < 1.5) return;
+    pts.push(p.x, p.y);
+    liveLine.current?.points(pts);
+    liveLine.current?.getLayer()?.batchDraw();
+  };
+
+  const endStroke = () => {
+    if (!drawing) return;
+    const { layerId: _, ...rest } = drawing;
+    s.addStroke({ ...rest, points: [...points.current] });
+    setDrawing(null);
+  };
+
+  const live = (layerId: string) =>
+    drawing?.layerId === layerId && <Line ref={liveLine} points={points.current} {...strokeProps(drawing)} />;
+
   const singleImage = s.selection.length === 1 && findObj(doc, s.selection[0])?.type === "image";
 
   return (
@@ -201,8 +263,17 @@ export default function Editor({ stageRef }: { stageRef: React.RefObject<Konva.S
         scaleX={scale}
         scaleY={scale}
         className="stage"
+        style={{ cursor: drawTool ? "none" : "default" }}
         onMouseDown={(e) => {
+          if (drawTool) return startStroke();
           if (e.target === e.target.getStage() || e.target.getLayer()?.name() === "background") s.select([]);
+        }}
+        onMouseMove={onPointerMove}
+        onMouseUp={endStroke}
+        onMouseLeave={() => {
+          endStroke();
+          cursor.current?.position({ x: -999, y: -999 });
+          cursor.current?.getLayer()?.batchDraw();
         }}
         onDragStart={onDragStart}
         onDragMove={onDragMove}
@@ -217,22 +288,39 @@ export default function Editor({ stageRef }: { stageRef: React.RefObject<Konva.S
             );
           if (l.kind === "icons")
             return (
-              <Layer key={l.id} name="icons" visible={l.visible} listening={!l.locked}>
+              <Layer key={l.id} name="icons" visible={l.visible} listening={!l.locked && !drawTool}>
                 {s.desktop!.icons.filter((i) => onMonitor(s.positions[i.id], monitor)).map((i) => (
                   <IconNode key={i.id} icon={i} monitor={monitor} draggable={!l.locked} />
                 ))}
               </Layer>
             );
           return (
-            <Layer key={l.id} name={l.kind} visible={l.visible} listening={!l.locked}>
+            <Layer key={l.id} name={l.kind} visible={l.visible} listening={!l.locked && !drawTool}>
               {l.objects.map((o) => (
                 <ObjectNode key={o.id} o={o} draggable={!l.locked} onPointerDown={onPointerDown} onChange={onChange} />
               ))}
+              <Strokes strokes={l.strokes} />
+              {live(l.id)}
             </Layer>
           );
         })}
-        <Layer name="ui">
+        <Layer name="ui" listening={!drawTool}>
           {s.grid && <Grid w={doc.width} h={doc.height} size={s.gridSize} />}
+          {live("ui")}
+          {drawTool && (
+            <Circle
+              ref={cursor}
+              x={-999}
+              y={-999}
+              radius={s.brush.size / 2}
+              stroke={s.tool === "eraser" ? "#ff3d9a" : "#fff"}
+              strokeWidth={1.5}
+              strokeScaleEnabled={false}
+              shadowColor="#000"
+              shadowBlur={2}
+              dash={s.tool === "eraser" ? [4, 3] : undefined}
+            />
+          )}
           {guides.map((g, i) => (
             <Line
               key={i}
