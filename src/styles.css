@@ -374,3 +374,14 @@ button.mini {
   width: 36px;
   padding: 6px 0;
 }
+button.accent-soft {
+  border-color: var(--accent);
+  color: var(--accent);
+  font-weight: 600;
+}
+.divider {
+  width: 1px;
+  align-self: stretch;
+  margin: 2px 4px;
+  background: var(--border);
+}

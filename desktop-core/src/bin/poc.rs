@@ -1,4 +1,4 @@
-﻿//! Milestone 1 proof of concept: list icons, save 3 icon PNGs, read flags,
+//! Milestone 1 proof of concept: list icons, save 3 icon PNGs, read flags,
 //! move one icon +100px, then restore it. `poc move` leaves it moved.
 use desktop_core::*;
 
@@ -10,6 +10,16 @@ fn main() -> windows::core::Result<()> {
     // `poc set NAME X Y`: put icon NAME at (X, Y), used to undo a `poc move`.
     let set_to = (args.first().is_some_and(|a| a == "set") && args.len() == 4)
         .then(|| (args[1].clone(), args[2].parse::<i32>().unwrap(), args[3].parse::<i32>().unwrap()));
+    // `poc wp` prints each monitor's wallpaper; `poc wp X Y PATH` sets one.
+    if args.first().is_some_and(|a| a == "wp") {
+        if args.len() == 4 {
+            set_wallpaper(args[1].parse().unwrap(), args[2].parse().unwrap(), &args[3])?;
+        }
+        for m in monitors() {
+            println!("{} ({},{}) {}", m.name, m.x, m.y, get_wallpaper(m.x, m.y)?);
+        }
+        return Ok(());
+    }
     for m in monitors() {
         println!("monitor {m:?}");
     }

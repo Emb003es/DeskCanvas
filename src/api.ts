@@ -32,4 +32,7 @@ export const api = {
   hasSnapshot: () => invoke<boolean>("has_snapshot"),
   setFlags: (autoArrange: boolean, snapToGrid: boolean) =>
     invoke<void>("set_flags", { autoArrange, snapToGrid }),
+  saveImage: (path: string, data: string) => invoke<void>("save_image", { path, data }),
+  /** Returns the wallpaper path Windows reports after applying. */
+  applyWallpaper: (x: number, y: number, data: string) => invoke<string>("apply_wallpaper", { x, y, data }),
 };

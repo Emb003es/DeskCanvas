@@ -3,7 +3,7 @@
 
 use serde::Serialize;
 pub use windows::core::Error;
-use windows::core::{Interface, Result, BOOL, PWSTR};
+use windows::core::{Interface, Result, BOOL, HSTRING, PCWSTR, PWSTR};
 use windows::Win32::Foundation::{LPARAM, POINT, RECT, SIZE};
 use windows::Win32::Graphics::Gdi::*;
 use windows::Win32::System::Com::*;
@@ -266,4 +266,41 @@ pub fn monitors() -> Vec<Monitor> {
         let _ = EnumDisplayMonitors(None, None, Some(cb), LPARAM(&mut list as *mut _ as isize));
     }
     list
+}
+
+/// Finds the IDesktopWallpaper monitor id whose rectangle starts at (x, y).
+unsafe fn wallpaper_monitor(wp: &IDesktopWallpaper, x: i32, y: i32) -> Result<PWSTR> {
+    for i in 0..wp.GetMonitorDevicePathCount()? {
+        let id = wp.GetMonitorDevicePathAt(i)?;
+        if let Ok(r) = wp.GetMonitorRECT(PCWSTR(id.0)) {
+            if r.left == x && r.top == y {
+                return Ok(id);
+            }
+        }
+        CoTaskMemFree(Some(id.0 as _));
+    }
+    Err(windows::Win32::Foundation::E_INVALIDARG.into())
+}
+
+/// Sets `path` as the wallpaper (fill) of the monitor whose top-left is (x, y).
+pub fn set_wallpaper(x: i32, y: i32, path: &str) -> Result<()> {
+    unsafe {
+        let wp: IDesktopWallpaper = CoCreateInstance(&DesktopWallpaper, None, CLSCTX_ALL)?;
+        let id = wallpaper_monitor(&wp, x, y)?;
+        let r = wp.SetWallpaper(PCWSTR(id.0), &HSTRING::from(path));
+        CoTaskMemFree(Some(id.0 as _));
+        r?;
+        wp.SetPosition(DWPOS_FILL)
+    }
+}
+
+/// Current wallpaper path of the monitor whose top-left is (x, y).
+pub fn get_wallpaper(x: i32, y: i32) -> Result<String> {
+    unsafe {
+        let wp: IDesktopWallpaper = CoCreateInstance(&DesktopWallpaper, None, CLSCTX_ALL)?;
+        let id = wallpaper_monitor(&wp, x, y)?;
+        let r = wp.GetWallpaper(PCWSTR(id.0));
+        CoTaskMemFree(Some(id.0 as _));
+        Ok(take_pwstr(r?))
+    }
 }

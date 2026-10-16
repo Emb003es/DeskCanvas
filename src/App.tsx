@@ -1,5 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import Konva from "konva";
+import { save } from "@tauri-apps/plugin-dialog";
+import { api } from "./api";
+import { renderDesign } from "./export";
 import Editor from "./canvas/Editor";
 import Library from "./panels/Library";
 import Properties from "./panels/Properties";
@@ -65,6 +68,40 @@ export default function App() {
   const stageRef = useRef<Konva.Stage>(null);
   useShortcuts();
 
+  const monitor = s.monitors[s.monitorIndex];
+
+  const exportImage = async () => {
+    const stage = stageRef.current;
+    if (!stage || !monitor) return;
+    const path = await save({
+      title: "Exportar fondo",
+      defaultPath: `DeskCanvas ${monitor.width}x${monitor.height}.png`,
+      filters: [
+        { name: "PNG", extensions: ["png"] },
+        { name: "JPG", extensions: ["jpg", "jpeg"] },
+      ],
+    });
+    if (!path) return;
+    const jpg = /\.jpe?g$/i.test(path);
+    try {
+      await api.saveImage(path, renderDesign(stage, monitor.width, monitor.height, jpg ? "image/jpeg" : "image/png"));
+      s.notify(`Guardado: ${path}`);
+    } catch (e) {
+      s.notify(String(e), true);
+    }
+  };
+
+  const applyWallpaper = async () => {
+    const stage = stageRef.current;
+    if (!stage || !monitor) return;
+    try {
+      await api.applyWallpaper(monitor.x, monitor.y, renderDesign(stage, monitor.width, monitor.height));
+      s.notify(`Fondo aplicado en la ${monitorLabel(monitor, s.monitorIndex).split(" ·")[0]}`);
+    } catch (e) {
+      s.notify(String(e), true);
+    }
+  };
+
   useEffect(() => {
     s.load();
   }, []);
@@ -107,22 +144,29 @@ export default function App() {
           </button>
         </div>
         <div className="group">
-          <button className={s.grid ? "toggle on" : "toggle"} onClick={() => s.toggle("grid")} title="Cuadrícula (G)">
-            ▦ Cuadrícula
+          <button className={s.grid ? "toggle icon on" : "toggle icon"} onClick={() => s.toggle("grid")} title="Cuadrícula (G)">
+            ▦
           </button>
-          <button className={s.snap ? "toggle on" : "toggle"} onClick={() => s.toggle("snap")} title="Imán y guías al mover">
-            🧲 Imán
+          <button className={s.snap ? "toggle icon on" : "toggle icon"} onClick={() => s.toggle("snap")} title="Imán y guías al mover">
+            🧲
           </button>
         </div>
         <div className="spacer" />
-        <button onClick={s.load} disabled={s.busy} title="Volver a leer los iconos del escritorio">
-          ⟳ Recargar
+        <button onClick={exportImage} title="Guardar el fondo como PNG o JPG, sin los iconos">
+          ⬇ Exportar
         </button>
-        <button onClick={s.restore} disabled={s.busy || !s.hasSnapshot} title="Devuelve los iconos a como estaban antes del primer cambio">
-          ↺ Restaurar original
+        <button className="accent-soft" onClick={applyWallpaper} title="Establece el diseño como fondo de este monitor">
+          🖼 Aplicar como fondo
+        </button>
+        <span className="divider" />
+        <button className="icon" onClick={s.load} disabled={s.busy} title="Volver a leer los iconos del escritorio">
+          ⟳
+        </button>
+        <button className="icon" onClick={s.restore} disabled={s.busy || !s.hasSnapshot} title="Restaurar iconos: vuelven a como estaban antes del primer cambio">
+          ↺
         </button>
         <button className="primary" onClick={s.apply} disabled={s.busy || !dirty}>
-          Aplicar al escritorio
+          Aplicar iconos
         </button>
         <button className="icon" onClick={toggleTheme} title="Cambiar tema" aria-label="Cambiar tema">
           {theme === "dark" ? "☀" : "☾"}
