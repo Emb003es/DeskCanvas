@@ -4,6 +4,7 @@ import { Circle, Group, Image, Layer, Line, Rect, Stage, Text, Transformer } fro
 import useImageLoader from "./useImage";
 import ObjectNode from "./ObjectNode";
 import { Box, Guide, snapBox } from "./guides";
+import { gridFromIcons, IconGrid, snapToFreeCell } from "./iconGrid";
 import { DesktopIcon, Monitor } from "../api";
 import { Background, Doc, Obj, Stroke } from "../doc";
 import { useDoc, useStore } from "../store";
@@ -50,7 +51,7 @@ function BackgroundFill({ bg, w, h }: { bg: Background; w: number; h: number }) 
   );
 }
 
-function IconNode({ icon, monitor, draggable }: { icon: DesktopIcon; monitor: Monitor; draggable: boolean }) {
+function IconNode({ icon, monitor, draggable, grid }: { icon: DesktopIcon; monitor: Monitor; draggable: boolean; grid: IconGrid | null }) {
   const desktop = useStore((s) => s.desktop)!;
   const pos = useStore((s) => s.positions[icon.id]);
   const moveIcon = useStore((s) => s.moveIcon);
@@ -73,7 +74,20 @@ function IconNode({ icon, monitor, draggable }: { icon: DesktopIcon; monitor: Mo
         n.x(Math.max(0, Math.min(monitor.width - w, n.x())));
         n.y(Math.max(0, Math.min(monitor.height - h, n.y())));
       }}
-      onDragEnd={(e) => moveIcon(icon.id, { x: Math.round(e.target.x()) + monitor.x, y: Math.round(e.target.y()) + monitor.y })}
+      onDragEnd={(e) => {
+        const n = e.target;
+        let p = { x: Math.round(n.x()), y: Math.round(n.y()) };
+        // Same as Explorer with "Align icons to grid": land on the nearest free cell.
+        if (grid) {
+          const { positions } = useStore.getState();
+          const others = Object.entries(positions)
+            .filter(([id, q]) => id !== icon.id && onMonitor(q, monitor))
+            .map(([, q]) => ({ x: q.x - monitor.x, y: q.y - monitor.y }));
+          p = snapToFreeCell(p, others, grid, monitor.width, monitor.height);
+          n.to({ x: p.x, y: p.y, duration: 0.12 });
+        }
+        moveIcon(icon.id, { x: p.x + monitor.x, y: p.y + monitor.y });
+      }}
     >
       <Rect
         width={w}
@@ -252,6 +266,19 @@ export default function Editor({ stageRef }: { stageRef: React.RefObject<Konva.S
   const live = (layerId: string) =>
     drawing?.layerId === layerId && <Line ref={liveLine} points={points.current} {...strokeProps(drawing)} />;
 
+  // Follow the user's Windows setting: snap icons only when "Align icons to grid" is on.
+  const iconGrid = (() => {
+    const d = s.desktop!;
+    if (!d.snapToGrid || d.autoArrange) return null;
+    const rel = (list: DesktopIcon[]) =>
+      list.flatMap((i) => {
+        const m = s.monitors.find((m) => onMonitor(i, m));
+        return m ? [{ x: i.x - m.x, y: i.y - m.y }] : [];
+      });
+    const here = d.icons.filter((i) => onMonitor(i, monitor));
+    return gridFromIcons(rel(here.length ? here : d.icons), d.cellWidth, d.cellHeight);
+  })();
+
   const singleImage = s.selection.length === 1 && findObj(doc, s.selection[0])?.type === "image";
 
   return (
@@ -290,12 +317,12 @@ export default function Editor({ stageRef }: { stageRef: React.RefObject<Konva.S
             return (
               <Layer key={l.id} name="icons" visible={l.visible} listening={!l.locked && !drawTool}>
                 {s.desktop!.icons.filter((i) => onMonitor(s.positions[i.id], monitor)).map((i) => (
-                  <IconNode key={i.id} icon={i} monitor={monitor} draggable={!l.locked} />
+                  <IconNode key={i.id} icon={i} monitor={monitor} draggable={!l.locked} grid={iconGrid} />
                 ))}
               </Layer>
             );
           return (
-            <Layer key={l.id} name={l.kind} visible={l.visible} listening={!l.locked && !drawTool}>
+            <Layer key={l.id} name={l.guide ? "guide" : l.kind} visible={l.visible} listening={!l.locked && !drawTool}>
               {l.objects.map((o) => (
                 <ObjectNode key={o.id} o={o} draggable={!l.locked} onPointerDown={onPointerDown} onChange={onChange} />
               ))}

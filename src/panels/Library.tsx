@@ -68,6 +68,7 @@ export default function Library() {
   const doc = useDoc();
   const addObject = useStore((s) => s.addObject);
   const notify = useStore((s) => s.notify);
+  const captureGuide = useStore((s) => s.captureGuide);
   const items = tab === "Básicos" ? basics : packItems[tab];
 
   const addCentered = (o: Item["obj"]) => doc && addObject({ ...o, x: doc.width / 2, y: doc.height / 2 });
@@ -112,6 +113,13 @@ export default function Library() {
         ＋ Importar mis imágenes
         <input type="file" accept="image/png,image/jpeg,image/webp,image/gif,image/svg+xml" multiple hidden onChange={onImport} />
       </label>
+      <button
+        className="import capture"
+        onClick={captureGuide}
+        title="Minimiza antes las demás ventanas. La captura queda como guía bloqueada y no se exporta."
+      >
+        📷 Capturar escritorio como guía
+      </button>
     </aside>
   );
 }

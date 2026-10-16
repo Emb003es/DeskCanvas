@@ -2,6 +2,7 @@ import { Background, Obj } from "../doc";
 import { findObj } from "../canvas/Editor";
 import { useDoc, useStore } from "../store";
 import { readImage } from "./Library";
+import { backgrounds } from "../stickers";
 
 const FONTS = ["Segoe UI", "Segoe Print", "Segoe Script", "Georgia", "Bahnschrift", "Consolas", "Comic Sans MS", "Impact"];
 
@@ -56,6 +57,19 @@ function BackgroundPanel() {
           Imagen
           <input type="file" accept="image/*" hidden onChange={onImage} />
         </label>
+      </div>
+      <div className="bg-gallery">
+        {backgrounds.map((b) => (
+          <button
+            key={b.src}
+            className={`bg-thumb ${bg.kind === "image" && bg.src === b.src ? "on" : ""}`}
+            title={b.name}
+            onClick={() => setBackground({ kind: "image", src: b.src, color: base })}
+          >
+            <img src={b.src} alt="" draggable={false} />
+            <span>{b.name}</span>
+          </button>
+        ))}
       </div>
       {bg.kind === "color" && (
         <Field label="Color">

@@ -10,7 +10,7 @@ function Row({ l, index, count }: { l: Layer; index: number; count: number }) {
   const fixed = l.kind === "background";
   return (
     <li className={`layer ${s.activeLayerId === l.id ? "active" : ""}`} onClick={() => s.setActiveLayer(l.id)}>
-      <span className="kind">{KIND_ICON[l.kind]}</span>
+      <span className="kind">{l.guide ? "📷" : KIND_ICON[l.kind]}</span>
       {editing ? (
         <input
           autoFocus

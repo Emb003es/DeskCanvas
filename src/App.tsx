@@ -1,13 +1,14 @@
 import { useEffect, useRef, useState } from "react";
 import Konva from "konva";
 import { save } from "@tauri-apps/plugin-dialog";
+import { getCurrentWindow } from "@tauri-apps/api/window";
 import { api } from "./api";
 import { renderDesign } from "./export";
 import Editor from "./canvas/Editor";
 import Library from "./panels/Library";
 import Properties from "./panels/Properties";
 import Layers from "./panels/Layers";
-import { monitorLabel, useDirty, useStore } from "./store";
+import { hasUnsaved, monitorLabel, useDirty, useStore } from "./store";
 import "./styles.css";
 
 type Theme = "light" | "dark";
@@ -33,12 +34,16 @@ function useShortcuts() {
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       const t = e.target as HTMLElement;
-      if (t.closest("input, textarea, select")) return;
+      const fileKey = (e.ctrlKey || e.metaKey) && ["s", "o", "n"].includes(e.key.toLowerCase());
+      if (t.closest("input, textarea, select") && !fileKey) return;
       const s = useStore.getState();
       const ctrl = e.ctrlKey || e.metaKey;
       const k = e.key.toLowerCase();
       const step = e.shiftKey ? 10 : 1;
       const handled = (() => {
+        if (ctrl && k === "s") return s.saveProject(e.shiftKey), true;
+        if (ctrl && k === "o") return s.openProject(), true;
+        if (ctrl && k === "n") return s.newProject(), true;
         if (ctrl && k === "z" && !e.shiftKey) return s.undo(), true;
         if (ctrl && (k === "y" || (k === "z" && e.shiftKey))) return s.redo(), true;
         if (ctrl && k === "d") return s.duplicateSelected(), true;
@@ -106,6 +111,20 @@ export default function App() {
     s.load();
   }, []);
 
+  const unsaved = useStore(hasUnsaved);
+  const projectName = s.projectPath?.split(/[\\/]/).pop()?.replace(/\.deskcanvas$/i, "") ?? "Sin título";
+  useEffect(() => {
+    getCurrentWindow().setTitle(`${unsaved ? "• " : ""}${projectName} — DeskCanvas`);
+  }, [unsaved, projectName]);
+
+  // Ask before closing with unsaved changes.
+  useEffect(() => {
+    const off = getCurrentWindow().onCloseRequested((e) => {
+      if (hasUnsaved(useStore.getState()) && !confirm("Hay cambios sin guardar. ¿Cerrar DeskCanvas igualmente?")) e.preventDefault();
+    });
+    return () => void off.then((f) => f());
+  }, []);
+
   const arrangeOn = s.desktop && (s.desktop.autoArrange || s.desktop.snapToGrid);
   const which = s.desktop
     ? [s.desktop.autoArrange && "Organizar automáticamente", s.desktop.snapToGrid && "Alinear iconos a la cuadrícula"].filter(Boolean).join(" y ")
@@ -115,7 +134,18 @@ export default function App() {
     <div className="app">
       <header className="toolbar">
         <div className="brand">
-          <span className="logo">◆</span> DeskCanvas
+          <span className="logo">◆</span> <span className="name">DeskCanvas</span>
+        </div>
+        <div className="group file">
+          <button className="icon" onClick={s.newProject} title="Nuevo diseño (Ctrl+N)">
+            📄
+          </button>
+          <button className="icon" onClick={s.openProject} title="Abrir proyecto (Ctrl+O)">
+            📂
+          </button>
+          <button className="icon" onClick={() => s.saveProject()} title={`Guardar proyecto (Ctrl+S)${s.projectPath ? " · " + s.projectPath : ""}`}>
+            💾
+          </button>
         </div>
         <select value={s.monitorIndex} onChange={(e) => s.setMonitor(+e.target.value)} aria-label="Monitor">
           {s.monitors.map((m, i) => (

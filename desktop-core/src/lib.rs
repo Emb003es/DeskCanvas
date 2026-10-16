@@ -195,14 +195,15 @@ impl Desktop {
             let item: IShellItem = self.fv.GetItem(i)?;
             let factory: IShellItemImageFactory = item.cast()?;
             let hbmp = factory.GetImage(SIZE { cx: size, cy: size }, SIIGBF_ICONONLY)?;
-            let png = hbitmap_to_png(hbmp);
+            let png = hbitmap_to_png(hbmp, false);
             let _ = DeleteObject(hbmp.into());
             Ok(png)
         }
     }
 }
 
-unsafe fn hbitmap_to_png(hbmp: HBITMAP) -> Vec<u8> {
+/// `opaque`: screen captures carry no alpha, so force it to 255 instead of un-premultiplying.
+unsafe fn hbitmap_to_png(hbmp: HBITMAP, opaque: bool) -> Vec<u8> {
     let mut bm = BITMAP::default();
     GetObjectW(hbmp.into(), std::mem::size_of::<BITMAP>() as i32, Some(&mut bm as *mut _ as _));
     let (w, h) = (bm.bmWidth, bm.bmHeight);
@@ -221,6 +222,11 @@ unsafe fn hbitmap_to_png(hbmp: HBITMAP) -> Vec<u8> {
     ReleaseDC(None, dc);
     // BGRA (premultiplied) -> RGBA straight
     for p in px.chunks_exact_mut(4) {
+        if opaque {
+            p.swap(0, 2);
+            p[3] = 255;
+            continue;
+        }
         let a = p[3] as u32;
         let (b, g, r) = (p[0] as u32, p[1] as u32, p[2] as u32);
         let un = |c: u32| if a == 0 { 0 } else { (c * 255 / a).min(255) as u8 };
@@ -302,5 +308,22 @@ pub fn get_wallpaper(x: i32, y: i32) -> Result<String> {
         let r = wp.GetWallpaper(PCWSTR(id.0));
         CoTaskMemFree(Some(id.0 as _));
         Ok(take_pwstr(r?))
+    }
+}
+
+/// PNG of the screen area (virtual-screen px), as currently displayed.
+pub fn capture(x: i32, y: i32, width: i32, height: i32) -> Result<Vec<u8>> {
+    unsafe {
+        let screen = GetDC(None);
+        let mem = CreateCompatibleDC(Some(screen));
+        let bmp = CreateCompatibleBitmap(screen, width, height);
+        let old = SelectObject(mem, bmp.into());
+        let ok = BitBlt(mem, 0, 0, width, height, Some(screen), x, y, SRCCOPY | CAPTUREBLT);
+        SelectObject(mem, old);
+        let png = ok.map(|_| hbitmap_to_png(bmp, true));
+        let _ = DeleteObject(bmp.into());
+        let _ = DeleteDC(mem);
+        ReleaseDC(None, screen);
+        png
     }
 }

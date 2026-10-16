@@ -24,6 +24,8 @@ export type DesktopState = {
 
 export type Move = { id: string; x: number; y: number };
 
+export type LoadedProject = { json: string; assets: Record<string, string> };
+
 export const api = {
   getMonitors: () => invoke<Monitor[]>("get_monitors"),
   getDesktop: () => invoke<DesktopState>("get_desktop"),
@@ -35,4 +37,9 @@ export const api = {
   saveImage: (path: string, data: string) => invoke<void>("save_image", { path, data }),
   /** Returns the wallpaper path Windows reports after applying. */
   applyWallpaper: (x: number, y: number, data: string) => invoke<string>("apply_wallpaper", { x, y, data }),
+  saveProject: (dir: string, json: string, assets: { name: string; data: string }[]) =>
+    invoke<void>("save_project", { dir, json, assets }),
+  loadProject: (dir: string) => invoke<LoadedProject>("load_project", { dir }),
+  captureScreen: (x: number, y: number, width: number, height: number) =>
+    invoke<string>("capture_screen", { x, y, width, height }),
 };

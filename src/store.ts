@@ -1,6 +1,9 @@
 import { create } from "zustand";
 import { produce, type Draft } from "immer";
+import { open, save } from "@tauri-apps/plugin-dialog";
+import { getCurrentWindow } from "@tauri-apps/api/window";
 import { api, DesktopState, Monitor } from "./api";
+import { extractAssets, inlineAssets, parseProject, ProjectFile } from "./project";
 import { Background, Doc, Layer, LayerKind, Obj, Stroke, newDoc, newLayer, newObj, uid } from "./doc";
 
 type Pos = { x: number; y: number };
@@ -26,6 +29,10 @@ type State = Snapshot & {
   gridSize: number;
   tool: Tool;
   brush: Brush;
+  /** Folder of the open project, if it was saved or opened. */
+  projectPath: string | null;
+  /** `docs` as last saved/opened; unsaved changes when it differs. */
+  savedDocs: Record<string, Doc>;
 
   load: () => Promise<void>;
   setMonitor: (i: number) => void;
@@ -62,13 +69,19 @@ type State = Snapshot & {
   /** Layer that receives strokes: the active drawing layer, else the topmost unlocked one. */
   drawingLayerId: () => string | undefined;
   addStroke: (stroke: Stroke) => void;
+  newProject: () => void;
+  saveProject: (saveAs?: boolean) => Promise<void>;
+  openProject: () => Promise<void>;
+  captureGuide: () => Promise<void>;
 };
 
 export const monitorLabel = (m: Monitor, i: number) =>
-  `Pantalla ${i + 1}${m.primary ? " (principal)" : ""} · ${m.width}×${m.height}`;
+  `Pantalla ${i + 1}${m.primary ? " ★" : ""} · ${m.width}×${m.height}`;
 
 /** Finds which layer holds an object. */
 const layerOf = (doc: Doc | Draft<Doc>, id: string) => doc.layers.find((l) => l.objects.some((o) => o.id === id));
+
+const NO_DOCS: Record<string, Doc> = {};
 
 export const useStore = create<State>((set, get) => {
   const run = async (fn: () => Promise<void>, ok?: string) => {
@@ -92,7 +105,11 @@ export const useStore = create<State>((set, get) => {
   /** Makes sure the selected monitor has a document (not an undo step). */
   const ensureDoc = () => {
     const m = get().monitors[get().monitorIndex];
-    if (m && !get().docs[m.name]) set({ docs: { ...get().docs, [m.name]: newDoc(m.width, m.height) } });
+    if (!m || get().docs[m.name]) return;
+    const clean = !hasUnsaved(get());
+    const docs = { ...get().docs, [m.name]: newDoc(m.width, m.height) };
+    // An empty design for another monitor is not an unsaved change.
+    set(clean ? { docs, savedDocs: docs } : { docs });
   };
 
   let lastKey: string | undefined;
@@ -105,7 +122,7 @@ export const useStore = create<State>((set, get) => {
     monitorIndex: 0,
     desktop: null,
     positions: {},
-    docs: {},
+    docs: NO_DOCS,
     hasSnapshot: false,
     busy: false,
     message: null,
@@ -118,12 +135,15 @@ export const useStore = create<State>((set, get) => {
     gridSize: 40,
     tool: "select",
     brush: { color: "#ffffff", size: 12, opacity: 1 },
+    projectPath: null,
+    savedDocs: NO_DOCS,
 
     load: () =>
       run(async () => {
         const monitors = await api.getMonitors();
         const primary = Math.max(0, monitors.findIndex((m) => m.primary));
-        set({ monitors, monitorIndex: get().monitors.length ? get().monitorIndex : primary });
+        const first = !get().monitors.length;
+        set({ monitors, monitorIndex: first ? primary : get().monitorIndex });
         ensureDoc();
         await reloadDesktop();
       }),
@@ -353,8 +373,82 @@ export const useStore = create<State>((set, get) => {
       });
       set({ activeLayerId: id });
     },
+
+    newProject: () => {
+      if (hasUnsaved(get()) && !confirm("Hay cambios sin guardar. ¿Empezar un diseño nuevo igualmente?")) return;
+      set({ docs: NO_DOCS, savedDocs: NO_DOCS, past: [], future: [], selection: [], activeLayerId: null, projectPath: null });
+      ensureDoc();
+    },
+
+    saveProject: (saveAs) =>
+      run(async () => {
+        let dir = saveAs ? null : get().projectPath;
+        if (!dir) {
+          dir = await save({
+            title: "Guardar proyecto",
+            defaultPath: "Mi fondo.deskcanvas",
+            filters: [{ name: "Proyecto DeskCanvas", extensions: ["deskcanvas"] }],
+          });
+          if (!dir) return;
+        }
+        const { docs, desktop, positions } = get();
+        const { docs: stored, assets } = extractAssets(docs);
+        const icons = (desktop?.icons ?? []).map((i) => ({ id: i.id, ...positions[i.id] }));
+        const file: ProjectFile = { app: "DeskCanvas", version: 1, docs: stored, icons };
+        await api.saveProject(dir, JSON.stringify(file), assets);
+        set({ projectPath: dir, savedDocs: docs });
+        get().notify("Proyecto guardado");
+      }),
+
+    openProject: () =>
+      run(async () => {
+        if (hasUnsaved(get()) && !confirm("Hay cambios sin guardar. ¿Abrir otro proyecto igualmente?")) return;
+        const dir = await open({ title: "Abrir proyecto (carpeta .deskcanvas)", directory: true });
+        if (typeof dir !== "string") return;
+        const loaded = await api.loadProject(dir);
+        const file = parseProject(loaded.json);
+        const docs = inlineAssets(file.docs, loaded.assets);
+        // A design saved for another monitor name lands on a monitor of the same size.
+        const unused = Object.keys(docs).filter((k) => !get().monitors.some((m) => m.name === k));
+        for (const m of get().monitors) {
+          if (docs[m.name]) continue;
+          const i = unused.findIndex((k) => docs[k].width === m.width && docs[k].height === m.height);
+          if (i >= 0) docs[m.name] = docs[unused.splice(i, 1)[0]];
+        }
+        const positions = { ...get().positions };
+        for (const ic of file.icons) if (positions[ic.id]) positions[ic.id] = { x: ic.x, y: ic.y };
+        set({ docs, positions, savedDocs: docs, past: [], future: [], selection: [], activeLayerId: null, projectPath: dir });
+        ensureDoc();
+        get().notify("Proyecto abierto");
+      }),
+
+    captureGuide: () =>
+      run(async () => {
+        const m = get().monitors[get().monitorIndex];
+        if (!m) return;
+        const win = getCurrentWindow();
+        await win.hide();
+        let src: string;
+        try {
+          // Give Windows time to repaint what was under the app window.
+          await new Promise((r) => setTimeout(r, 700));
+          src = await api.captureScreen(m.x, m.y, m.width, m.height);
+        } finally {
+          await win.show();
+          await win.setFocus();
+        }
+        const layer: Layer = {
+          ...newLayer("objects", "Guía (captura)"),
+          locked: true,
+          guide: true,
+          objects: [newObj({ type: "image", src, x: m.width / 2, y: m.height / 2, width: m.width, height: m.height, opacity: 0.6 })],
+        };
+        get().commit((_, doc) => void doc.layers.splice(1, 0, layer));
+      }, "Captura añadida como guía bloqueada (no se exporta)"),
   };
 });
+
+export const hasUnsaved = (s: Pick<State, "docs" | "savedDocs">) => s.docs !== s.savedDocs;
 
 export const currentDoc = (s: Pick<State, "docs" | "monitors" | "monitorIndex">): Doc | undefined =>
   s.docs[s.monitors[s.monitorIndex]?.name ?? ""];

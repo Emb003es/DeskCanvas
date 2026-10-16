@@ -27,7 +27,7 @@ fn main() -> windows::core::Result<()> {
     println!("listview origin={:?}", d.origin());
     let size = d.icon_size()?;
     let (auto, snap) = d.flags()?;
-    println!("icon_size={size} auto_arrange={auto} snap_to_grid={snap}");
+    println!("icon_size={size} auto_arrange={auto} snap_to_grid={snap} spacing={:?}", d.spacing()?);
 
     let icons = d.icons()?;
     println!("{} icons", icons.len());

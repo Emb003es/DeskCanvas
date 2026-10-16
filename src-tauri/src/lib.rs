@@ -1,5 +1,5 @@
 use base64::{Engine, engine::general_purpose::STANDARD};
-use desktop_core::{Desktop, Monitor, com_init, get_wallpaper, monitors, set_wallpaper};
+use desktop_core::{Desktop, Monitor, capture, com_init, get_wallpaper, monitors, set_wallpaper};
 use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
 use tauri::Manager;
@@ -174,6 +174,106 @@ async fn apply_wallpaper(app: tauri::AppHandle, x: i32, y: i32, data: String) ->
     .map_err(|_| "Fallo inesperado al aplicar el fondo".to_string())?
 }
 
+#[derive(Deserialize)]
+struct Asset {
+    name: String,
+    data: String,
+}
+
+#[derive(Serialize)]
+struct LoadedProject {
+    json: String,
+    /// Asset file name -> data URL.
+    assets: std::collections::HashMap<String, String>,
+}
+
+/// Asset names come from the page; only accept `<8 hex>.<ext>` so they cannot escape the folder.
+fn valid_asset_name(name: &str) -> bool {
+    let Some((stem, ext)) = name.split_once('.') else { return false };
+    stem.len() == 8
+        && stem.chars().all(|c| c.is_ascii_hexdigit())
+        && ["png", "jpg", "webp", "gif", "svg", "bin"].contains(&ext)
+}
+
+const MIME: [(&str, &str); 6] = [
+    ("png", "image/png"),
+    ("jpg", "image/jpeg"),
+    ("webp", "image/webp"),
+    ("gif", "image/gif"),
+    ("svg", "image/svg+xml"),
+    ("bin", "application/octet-stream"),
+];
+
+/// Writes `<dir>/project.json` and `<dir>/assets/*`, removing assets no longer used.
+#[tauri::command]
+async fn save_project(dir: String, json: String, assets: Vec<Asset>) -> Result<(), String> {
+    let dir = PathBuf::from(dir);
+    let assets_dir = dir.join("assets");
+    std::fs::create_dir_all(&assets_dir).map_err(|e| format!("No se pudo crear {}: {e}", dir.display()))?;
+    let mut keep = std::collections::HashSet::new();
+    for a in &assets {
+        if !valid_asset_name(&a.name) {
+            return Err(format!("Nombre de recurso no válido: {}", a.name));
+        }
+        keep.insert(a.name.clone());
+        let path = assets_dir.join(&a.name);
+        // Names are content hashes: an existing file already has these bytes.
+        if !path.exists() {
+            std::fs::write(&path, decode(&a.data)?).map_err(|e| e.to_string())?;
+        }
+    }
+    // Write to a temp file first so a crash never leaves a half-written project.
+    let tmp = dir.join("project.json.tmp");
+    std::fs::write(&tmp, json).map_err(|e| e.to_string())?;
+    std::fs::rename(&tmp, dir.join("project.json")).map_err(|e| e.to_string())?;
+    for f in std::fs::read_dir(&assets_dir).map_err(|e| e.to_string())?.flatten() {
+        let name = f.file_name().to_string_lossy().to_string();
+        if valid_asset_name(&name) && !keep.contains(&name) {
+            let _ = std::fs::remove_file(f.path());
+        }
+    }
+    Ok(())
+}
+
+#[tauri::command]
+async fn load_project(dir: String) -> Result<LoadedProject, String> {
+    let dir = PathBuf::from(dir);
+    let json = std::fs::read_to_string(dir.join("project.json"))
+        .map_err(|_| "Esa carpeta no contiene un proyecto de DeskCanvas (falta project.json)".to_string())?;
+    let mut assets = std::collections::HashMap::new();
+    if let Ok(entries) = std::fs::read_dir(dir.join("assets")) {
+        for f in entries.flatten() {
+            let name = f.file_name().to_string_lossy().to_string();
+            if !valid_asset_name(&name) {
+                continue;
+            }
+            let ext = name.rsplit('.').next().unwrap_or("bin");
+            let mime = MIME.iter().find(|(e, _)| *e == ext).map_or("application/octet-stream", |(_, m)| *m);
+            let bytes = std::fs::read(f.path()).map_err(|e| e.to_string())?;
+            assets.insert(name, format!("data:{mime};base64,{}", STANDARD.encode(bytes)));
+        }
+    }
+    Ok(LoadedProject { json, assets })
+}
+
+/// Screenshot of a monitor area as a PNG data URL (for the capture guide).
+#[tauri::command]
+async fn capture_screen(x: i32, y: i32, width: i32, height: i32) -> Result<String, String> {
+    let png = capture(x, y, width, height).map_err(|e| format!("No se pudo capturar la pantalla: {e}"))?;
+    Ok(format!("data:image/png;base64,{}", STANDARD.encode(png)))
+}
+
+#[cfg(test)]
+mod tests {
+    #[test]
+    fn asset_names_cannot_escape() {
+        assert!(super::valid_asset_name("0a1b2c3d.png"));
+        assert!(!super::valid_asset_name("../evil.png"));
+        assert!(!super::valid_asset_name("0a1b2c3d.exe"));
+        assert!(!super::valid_asset_name("0a1b2c3d/../x.png"));
+    }
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -186,7 +286,10 @@ pub fn run() {
             has_snapshot,
             set_flags,
             save_image,
-            apply_wallpaper
+            apply_wallpaper,
+            save_project,
+            load_project,
+            capture_screen
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

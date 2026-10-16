@@ -2,10 +2,10 @@ import Konva from "konva";
 
 /**
  * Renders the design at the monitor's exact physical size, without desktop icons,
- * selection handles or guides. Layers the user hid stay hidden.
+ * selection handles, guides or capture guides. Layers the user hid stay hidden.
  */
 export function renderDesign(stage: Konva.Stage, width: number, height: number, mimeType = "image/png") {
-  const skip = stage.getLayers().filter((l) => l.name() === "icons" || l.name() === "ui");
+  const skip = stage.getLayers().filter((l) => ["icons", "ui", "guide"].includes(l.name()));
   const shown = skip.map((l) => l.visible());
   const old = { size: stage.size(), scale: stage.scale() };
   skip.forEach((l) => l.visible(false));

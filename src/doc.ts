@@ -42,6 +42,8 @@ export type Layer = {
   locked: boolean;
   objects: Obj[];
   strokes: Stroke[];
+  /** Screen-capture guide: visible while designing, never exported. */
+  guide?: boolean;
 };
 
 /** `layers` go bottom to top; the background layer is always first. */
