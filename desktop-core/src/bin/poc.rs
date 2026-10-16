@@ -1,10 +1,15 @@
-//! Milestone 1 proof of concept: list icons, save 3 icon PNGs, read flags,
+﻿//! Milestone 1 proof of concept: list icons, save 3 icon PNGs, read flags,
 //! move one icon +100px, then restore it. `poc move` leaves it moved.
 use desktop_core::*;
 
 fn main() -> windows::core::Result<()> {
     com_init();
-    let keep_moved = std::env::args().any(|a| a == "move");
+    let args: Vec<String> = std::env::args().skip(1).collect();
+    let keep_moved = args.first().is_some_and(|a| a == "move");
+    let list_only = args.first().is_some_and(|a| a == "list");
+    // `poc set NAME X Y`: put icon NAME at (X, Y), used to undo a `poc move`.
+    let set_to = (args.first().is_some_and(|a| a == "set") && args.len() == 4)
+        .then(|| (args[1].clone(), args[2].parse::<i32>().unwrap(), args[3].parse::<i32>().unwrap()));
     for m in monitors() {
         println!("monitor {m:?}");
     }
@@ -26,6 +31,15 @@ fn main() -> windows::core::Result<()> {
     }
 
     let Some(first) = icons.first() else { return Ok(()) };
+    if list_only {
+        return Ok(());
+    }
+    if let Some((name, x, y)) = set_to {
+        let ic = icons.iter().find(|i| i.name == name).expect("no icon with that name");
+        d.move_icons(&[(ic.id.clone(), x, y)])?;
+        println!("set '{name}' -> ({x},{y})");
+        return Ok(());
+    }
     d.move_icons(&[(first.id.clone(), first.x + 100, first.y + 100)])?;
     let after = d.icons()?.into_iter().find(|i| i.id == first.id).unwrap();
     println!("moved '{}' ({},{}) -> ({},{})", first.name, first.x, first.y, after.x, after.y);

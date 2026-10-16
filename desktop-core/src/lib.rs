@@ -42,6 +42,7 @@ pub fn com_init() {
 }
 
 pub struct Desktop {
+    view: IShellView,
     fv: IFolderView2,
     /// ListView client origin in virtual-screen coordinates.
     origin: POINT,
@@ -75,7 +76,7 @@ impl Desktop {
             if !ClientToScreen(lv, &mut origin).as_bool() {
                 origin = POINT { x: GetSystemMetrics(SM_XVIRTUALSCREEN), y: GetSystemMetrics(SM_YVIRTUALSCREEN) };
             }
-            Ok(Self { fv, origin })
+            Ok(Self { view, fv, origin })
         }
     }
 
@@ -136,6 +137,8 @@ impl Desktop {
                 CoTaskMemFree(Some(pidl as _));
                 r?;
             }
+            // Persist the layout now; otherwise Explorer only saves it on clean shutdown.
+            self.view.SaveViewState()?;
         }
         Ok(())
     }
