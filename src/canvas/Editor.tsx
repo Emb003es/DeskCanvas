@@ -1,8 +1,12 @@
-import { useEffect, useRef, useState } from "react";
-import { Group, Image, Layer, Rect, Stage, Text } from "react-konva";
+import { useCallback, useEffect, useRef, useState } from "react";
+import Konva from "konva";
+import { Group, Image, Layer, Line, Rect, Stage, Text, Transformer } from "react-konva";
 import useImageLoader from "./useImage";
+import ObjectNode from "./ObjectNode";
+import { Box, Guide, snapBox } from "./guides";
 import { DesktopIcon, Monitor } from "../api";
-import { useStore } from "../store";
+import { Background, Doc, Obj } from "../doc";
+import { useDoc, useStore } from "../store";
 
 /** Fits the monitor (physical px) into the available area, keeping aspect ratio. */
 function useFit(monitor: Monitor | undefined) {
@@ -18,7 +22,35 @@ function useFit(monitor: Monitor | undefined) {
   return { ref, scale: scale > 0 ? scale : 1 };
 }
 
-function IconNode({ icon, monitor }: { icon: DesktopIcon; monitor: Monitor }) {
+function BackgroundFill({ bg, w, h }: { bg: Background; w: number; h: number }) {
+  const img = useImageLoader(bg.kind === "image" ? bg.src : "");
+  if (bg.kind === "color") return <Rect width={w} height={h} fill={bg.color} />;
+  if (bg.kind === "gradient") {
+    const a = (bg.angle * Math.PI) / 180;
+    // CSS convention: 0° points up, 90° right.
+    const [cx, cy] = [Math.sin(a), -Math.cos(a)];
+    const len = (Math.abs(w * cx) + Math.abs(h * cy)) / 2;
+    return (
+      <Rect
+        width={w}
+        height={h}
+        fillLinearGradientStartPoint={{ x: w / 2 - cx * len, y: h / 2 - cy * len }}
+        fillLinearGradientEndPoint={{ x: w / 2 + cx * len, y: h / 2 + cy * len }}
+        fillLinearGradientColorStops={[0, bg.from, 1, bg.to]}
+      />
+    );
+  }
+  // Image: cover the whole monitor, centered.
+  const k = img ? Math.max(w / img.width, h / img.height) : 1;
+  return (
+    <>
+      <Rect width={w} height={h} fill={bg.color} />
+      {img && <Image image={img} width={img.width * k} height={img.height * k} x={(w - img.width * k) / 2} y={(h - img.height * k) / 2} />}
+    </>
+  );
+}
+
+function IconNode({ icon, monitor, draggable }: { icon: DesktopIcon; monitor: Monitor; draggable: boolean }) {
   const desktop = useStore((s) => s.desktop)!;
   const pos = useStore((s) => s.positions[icon.id]);
   const moveIcon = useStore((s) => s.moveIcon);
@@ -33,7 +65,7 @@ function IconNode({ icon, monitor }: { icon: DesktopIcon; monitor: Monitor }) {
     <Group
       x={pos.x - monitor.x}
       y={pos.y - monitor.y}
-      draggable
+      draggable={draggable}
       onMouseEnter={() => setHover(true)}
       onMouseLeave={() => setHover(false)}
       onDragMove={(e) => {
@@ -41,9 +73,7 @@ function IconNode({ icon, monitor }: { icon: DesktopIcon; monitor: Monitor }) {
         n.x(Math.max(0, Math.min(monitor.width - w, n.x())));
         n.y(Math.max(0, Math.min(monitor.height - h, n.y())));
       }}
-      onDragEnd={(e) =>
-        moveIcon(icon.id, { x: Math.round(e.target.x()) + monitor.x, y: Math.round(e.target.y()) + monitor.y })
-      }
+      onDragEnd={(e) => moveIcon(icon.id, { x: Math.round(e.target.x()) + monitor.x, y: Math.round(e.target.y()) + monitor.y })}
     >
       <Rect
         width={w}
@@ -74,37 +104,163 @@ function IconNode({ icon, monitor }: { icon: DesktopIcon; monitor: Monitor }) {
   );
 }
 
-export default function Editor() {
-  const { monitors, monitorIndex, desktop } = useStore();
-  const monitor = monitors[monitorIndex];
-  const { ref, scale } = useFit(monitor);
-  const positions = useStore((s) => s.positions);
+function Grid({ w, h, size }: { w: number; h: number; size: number }) {
+  const lines = [];
+  for (let x = size; x < w; x += size) lines.push(<Line key={`x${x}`} points={[x, 0, x, h]} stroke="#fff" opacity={0.25} strokeWidth={1} strokeScaleEnabled={false} />);
+  for (let y = size; y < h; y += size) lines.push(<Line key={`y${y}`} points={[0, y, w, y]} stroke="#fff" opacity={0.25} strokeWidth={1} strokeScaleEnabled={false} />);
+  return <>{lines}</>;
+}
 
-  const onMonitor = (id: string) => {
-    const p = positions[id];
-    return p && monitor && p.x >= monitor.x && p.x < monitor.x + monitor.width && p.y >= monitor.y && p.y < monitor.y + monitor.height;
+export default function Editor({ stageRef }: { stageRef: React.RefObject<Konva.Stage | null> }) {
+  const doc = useDoc();
+  const s = useStore();
+  const monitor = s.monitors[s.monitorIndex];
+  const { ref, scale } = useFit(monitor);
+  const trRef = useRef<Konva.Transformer>(null);
+  const others = useRef<Box[]>([]);
+  const [guides, setGuides] = useState<Guide[]>([]);
+
+  // Attach the transformer to the selected nodes.
+  useEffect(() => {
+    const tr = trRef.current;
+    const stage = stageRef.current;
+    if (!tr || !stage) return;
+    tr.nodes(s.selection.map((id) => stage.findOne("#" + id)).filter((n): n is Konva.Node => !!n));
+    tr.getLayer()?.batchDraw();
+  }, [s.selection, doc]);
+
+  const onPointerDown = useCallback((id: string, shift: boolean) => {
+    const { selection, select } = useStore.getState();
+    if (shift) select(selection.includes(id) ? selection.filter((s) => s !== id) : [...selection, id]);
+    else if (!selection.includes(id)) select([id]);
+  }, []);
+
+  const onChange = useCallback((id: string, patch: Partial<Obj>) => {
+    useStore.getState().updateObjects([id], patch, "transform");
+  }, []);
+
+  if (!monitor || !doc || !s.desktop) return <div className="stage-wrap" ref={ref} />;
+
+  const canvas: Box = { x: 0, y: 0, width: doc.width, height: doc.height };
+  const isObject = (n: Konva.Node) => n.name() === "object";
+
+  const onDragStart = (e: Konva.KonvaEventObject<DragEvent>) => {
+    const stage = stageRef.current!;
+    if (!isObject(e.target)) return;
+    const moving = new Set(useStore.getState().selection);
+    others.current = stage
+      .find(".object")
+      .filter((n) => !moving.has(n.id()) && n.isVisible())
+      .map((n) => n.getClientRect({ relativeTo: stage, skipShadow: true }));
   };
 
+  const onDragMove = (e: Konva.KonvaEventObject<DragEvent>) => {
+    const n = e.target;
+    if (!isObject(n) || !s.snap) return;
+    const stage = stageRef.current!;
+    const r = snapBox(n.getClientRect({ relativeTo: stage, skipShadow: true }), others.current, canvas, 8 / scale, s.grid ? s.gridSize : 0);
+    n.position({ x: n.x() + r.dx, y: n.y() + r.dy });
+    setGuides(r.guides);
+  };
+
+  const onDragEnd = (e: Konva.KonvaEventObject<DragEvent>) => {
+    if (!isObject(e.target)) return;
+    setGuides([]);
+    const stage = stageRef.current!;
+    // Dragging one node of a multi-selection moves all of them.
+    const { selection } = useStore.getState();
+    const ids = selection.includes(e.target.id()) ? selection : [e.target.id()];
+    s.commit((_, d) => {
+      for (const l of d.layers)
+        for (const o of l.objects)
+          if (ids.includes(o.id)) {
+            const n = stage.findOne("#" + o.id);
+            if (n) (o.x = n.x()), (o.y = n.y());
+          }
+    });
+  };
+
+  const onDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    const raw = e.dataTransfer.getData("application/x-deskcanvas");
+    const stage = stageRef.current;
+    if (!raw || !stage) return;
+    stage.setPointersPositions(e);
+    const p = stage.getRelativePointerPosition();
+    if (p) s.addObject({ ...JSON.parse(raw), x: p.x, y: p.y });
+  };
+
+  const singleImage = s.selection.length === 1 && findObj(doc, s.selection[0])?.type === "image";
+
   return (
-    <div className="stage-wrap" ref={ref}>
-      {monitor && desktop && (
-        <Stage width={monitor.width * scale} height={monitor.height * scale} scaleX={scale} scaleY={scale} className="stage">
-          <Layer listening={false}>
-            <Rect
-              width={monitor.width}
-              height={monitor.height}
-              fillLinearGradientStartPoint={{ x: 0, y: 0 }}
-              fillLinearGradientEndPoint={{ x: monitor.width, y: monitor.height }}
-              fillLinearGradientColorStops={[0, "#f6c8a8", 0.5, "#c9a7e8", 1, "#7fb3e6"]}
+    <div className="stage-wrap" ref={ref} onDragOver={(e) => e.preventDefault()} onDrop={onDrop}>
+      <Stage
+        ref={stageRef}
+        width={monitor.width * scale}
+        height={monitor.height * scale}
+        scaleX={scale}
+        scaleY={scale}
+        className="stage"
+        onMouseDown={(e) => {
+          if (e.target === e.target.getStage() || e.target.getLayer()?.name() === "background") s.select([]);
+        }}
+        onDragStart={onDragStart}
+        onDragMove={onDragMove}
+        onDragEnd={onDragEnd}
+      >
+        {doc.layers.map((l) => {
+          if (l.kind === "background")
+            return (
+              <Layer key={l.id} name="background" visible={l.visible} listening={!l.locked}>
+                <BackgroundFill bg={doc.background} w={doc.width} h={doc.height} />
+              </Layer>
+            );
+          if (l.kind === "icons")
+            return (
+              <Layer key={l.id} name="icons" visible={l.visible} listening={!l.locked}>
+                {s.desktop!.icons.filter((i) => onMonitor(s.positions[i.id], monitor)).map((i) => (
+                  <IconNode key={i.id} icon={i} monitor={monitor} draggable={!l.locked} />
+                ))}
+              </Layer>
+            );
+          return (
+            <Layer key={l.id} name={l.kind} visible={l.visible} listening={!l.locked}>
+              {l.objects.map((o) => (
+                <ObjectNode key={o.id} o={o} draggable={!l.locked} onPointerDown={onPointerDown} onChange={onChange} />
+              ))}
+            </Layer>
+          );
+        })}
+        <Layer name="ui">
+          {s.grid && <Grid w={doc.width} h={doc.height} size={s.gridSize} />}
+          {guides.map((g, i) => (
+            <Line
+              key={i}
+              points={g.axis === "x" ? [g.at, 0, g.at, doc.height] : [0, g.at, doc.width, g.at]}
+              stroke="#ff3d9a"
+              strokeWidth={1.5}
+              strokeScaleEnabled={false}
+              dash={[6, 4]}
+              listening={false}
             />
-          </Layer>
-          <Layer>
-            {desktop.icons.filter((i) => onMonitor(i.id)).map((i) => (
-              <IconNode key={i.id} icon={i} monitor={monitor} />
-            ))}
-          </Layer>
-        </Stage>
-      )}
+          ))}
+          <Transformer
+            ref={trRef}
+            rotationSnaps={[0, 45, 90, 135, 180, 225, 270, 315]}
+            keepRatio={singleImage}
+            flipEnabled={false}
+            anchorCornerRadius={4}
+            anchorStroke="#8b5cf6"
+            borderStroke="#8b5cf6"
+            boundBoxFunc={(oldBox, box) => (Math.abs(box.width) < 8 || Math.abs(box.height) < 8 ? oldBox : box)}
+          />
+        </Layer>
+      </Stage>
     </div>
   );
 }
+
+const onMonitor = (p: { x: number; y: number } | undefined, m: Monitor) =>
+  !!p && p.x >= m.x && p.x < m.x + m.width && p.y >= m.y && p.y < m.y + m.height;
+
+export const findObj = (doc: Doc, id: string) => doc.layers.flatMap((l) => l.objects).find((o) => o.id === id);

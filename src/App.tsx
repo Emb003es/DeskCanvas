@@ -1,5 +1,9 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import Konva from "konva";
 import Editor from "./canvas/Editor";
+import Library from "./panels/Library";
+import Properties from "./panels/Properties";
+import Layers from "./panels/Layers";
 import { monitorLabel, useDirty, useStore } from "./store";
 import "./styles.css";
 
@@ -22,10 +26,39 @@ function useTheme() {
   return [theme, () => setTheme(theme === "dark" ? "light" : "dark")] as const;
 }
 
+function useShortcuts() {
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      const t = e.target as HTMLElement;
+      if (t.closest("input, textarea, select")) return;
+      const s = useStore.getState();
+      const ctrl = e.ctrlKey || e.metaKey;
+      const k = e.key.toLowerCase();
+      const step = e.shiftKey ? 10 : 1;
+      const handled = (() => {
+        if (ctrl && k === "z" && !e.shiftKey) return s.undo(), true;
+        if (ctrl && (k === "y" || (k === "z" && e.shiftKey))) return s.redo(), true;
+        if (ctrl && k === "d") return s.duplicateSelected(), true;
+        if (k === "delete" || k === "backspace") return s.deleteSelected(), true;
+        if (k === "escape") return s.select([]), true;
+        if (k === "g" && !ctrl) return s.toggle("grid"), true;
+        const arrows: Record<string, [number, number]> = { arrowleft: [-step, 0], arrowright: [step, 0], arrowup: [0, -step], arrowdown: [0, step] };
+        if (arrows[k] && s.selection.length) return s.nudge(...arrows[k]), true;
+        return false;
+      })();
+      if (handled) e.preventDefault();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
+}
+
 export default function App() {
   const s = useStore();
   const dirty = useDirty();
   const [theme, toggleTheme] = useTheme();
+  const stageRef = useRef<Konva.Stage>(null);
+  useShortcuts();
 
   useEffect(() => {
     s.load();
@@ -33,9 +66,7 @@ export default function App() {
 
   const arrangeOn = s.desktop && (s.desktop.autoArrange || s.desktop.snapToGrid);
   const which = s.desktop
-    ? [s.desktop.autoArrange && "Organizar automáticamente", s.desktop.snapToGrid && "Alinear iconos a la cuadrícula"]
-        .filter(Boolean)
-        .join(" y ")
+    ? [s.desktop.autoArrange && "Organizar automáticamente", s.desktop.snapToGrid && "Alinear iconos a la cuadrícula"].filter(Boolean).join(" y ")
     : "";
 
   return (
@@ -51,6 +82,22 @@ export default function App() {
             </option>
           ))}
         </select>
+        <div className="group">
+          <button className="icon" onClick={s.undo} disabled={!s.past.length} title="Deshacer (Ctrl+Z)">
+            ↶
+          </button>
+          <button className="icon" onClick={s.redo} disabled={!s.future.length} title="Rehacer (Ctrl+Y)">
+            ↷
+          </button>
+        </div>
+        <div className="group">
+          <button className={s.grid ? "toggle on" : "toggle"} onClick={() => s.toggle("grid")} title="Cuadrícula (G)">
+            ▦ Cuadrícula
+          </button>
+          <button className={s.snap ? "toggle on" : "toggle"} onClick={() => s.toggle("snap")} title="Imán y guías al mover">
+            🧲 Imán
+          </button>
+        </div>
         <div className="spacer" />
         <button onClick={s.load} disabled={s.busy} title="Volver a leer los iconos del escritorio">
           ⟳ Recargar
@@ -75,9 +122,16 @@ export default function App() {
         </div>
       )}
 
-      <main className="workspace">
-        <Editor />
-      </main>
+      <div className="body">
+        <Library />
+        <main className="workspace">
+          <Editor stageRef={stageRef} />
+        </main>
+        <aside className="panel side">
+          <Properties />
+          <Layers />
+        </aside>
+      </div>
 
       {s.message && <div className={`toast ${s.message.error ? "error" : ""}`}>{s.message.text}</div>}
     </div>
