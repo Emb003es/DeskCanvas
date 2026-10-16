@@ -1,0 +1,152 @@
+:root {
+  --bg: #f4f1ee;
+  --panel: #ffffff;
+  --text: #2b2730;
+  --muted: #7a7380;
+  --border: #e4dfe8;
+  --accent: #8b5cf6;
+  --accent-text: #ffffff;
+  --warn-bg: #fff4d6;
+  --warn-text: #6b4e00;
+  --error: #d64545;
+  --shadow: 0 8px 30px rgba(60, 40, 90, 0.12);
+  color-scheme: light;
+}
+:root[data-theme="dark"] {
+  --bg: #17151b;
+  --panel: #221f28;
+  --text: #ece8f1;
+  --muted: #a59eae;
+  --border: #35303d;
+  --accent: #a78bfa;
+  --accent-text: #17151b;
+  --warn-bg: #3a3017;
+  --warn-text: #f3d98a;
+  --error: #f07a7a;
+  --shadow: 0 8px 30px rgba(0, 0, 0, 0.4);
+  color-scheme: dark;
+}
+
+* {
+  box-sizing: border-box;
+}
+html,
+body,
+#root {
+  margin: 0;
+  height: 100%;
+}
+body {
+  background: var(--bg);
+  color: var(--text);
+  font: 14px/1.4 "Segoe UI Variable Text", "Segoe UI", system-ui, sans-serif;
+  user-select: none;
+}
+
+.app {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.toolbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  background: var(--panel);
+  border-bottom: 1px solid var(--border);
+}
+.brand {
+  font-weight: 700;
+  font-size: 16px;
+  margin-right: 8px;
+}
+.logo {
+  color: var(--accent);
+}
+.spacer {
+  flex: 1;
+}
+
+button,
+select {
+  font: inherit;
+  color: var(--text);
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 6px 12px;
+  cursor: pointer;
+  transition: transform 0.08s, background 0.15s;
+}
+button:hover:not(:disabled) {
+  background: var(--border);
+}
+button:active:not(:disabled) {
+  transform: scale(0.97);
+}
+button:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+button.primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--accent-text);
+  font-weight: 600;
+}
+button.primary:hover:not(:disabled) {
+  filter: brightness(1.08);
+  background: var(--accent);
+}
+button.icon {
+  width: 36px;
+  padding: 6px 0;
+}
+
+.banner {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 14px;
+  background: var(--warn-bg);
+  color: var(--warn-text);
+}
+.banner button {
+  margin-left: auto;
+}
+
+.workspace {
+  flex: 1;
+  min-height: 0;
+  padding: 20px;
+}
+.stage-wrap {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.stage {
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: var(--shadow);
+}
+
+.toast {
+  position: fixed;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--panel);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow);
+  padding: 10px 16px;
+  border-radius: 12px;
+}
+.toast.error {
+  color: var(--error);
+  border-color: var(--error);
+}

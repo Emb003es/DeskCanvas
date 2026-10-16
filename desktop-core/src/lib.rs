@@ -1,7 +1,8 @@
-﻿//! Read and move the real desktop icons through the shell COM APIs
+//! Read and move the real desktop icons through the shell COM APIs
 //! (IShellWindows -> IShellBrowser -> IFolderView2). No process injection.
 
 use serde::Serialize;
+pub use windows::core::Error;
 use windows::core::{Interface, Result, BOOL, PWSTR};
 use windows::Win32::Foundation::{LPARAM, POINT, RECT, SIZE};
 use windows::Win32::Graphics::Gdi::*;
@@ -128,8 +129,12 @@ impl Desktop {
     /// Moves icons to virtual-screen coordinates. Unknown ids are skipped.
     pub fn move_icons(&self, moves: &[(String, i32, i32)]) -> Result<()> {
         unsafe {
+            let mut index = std::collections::HashMap::new();
+            for i in 0..self.count()? {
+                index.insert(self.id_at(i)?, i);
+            }
             for (id, x, y) in moves {
-                let Some(i) = self.index_of(id)? else { continue };
+                let Some(&i) = index.get(id) else { continue };
                 let pidl = self.fv.Item(i)?;
                 let pt = POINT { x: x - self.origin.x, y: y - self.origin.y };
                 let apidl = [pidl as *const ITEMIDLIST];
@@ -169,8 +174,24 @@ impl Desktop {
 
     /// PNG bytes of the icon image at `size` px, with alpha.
     pub fn icon_png(&self, id: &str, size: i32) -> Result<Vec<u8>> {
+        let i = self.index_of(id)?.ok_or_else(|| windows::core::Error::from(windows::Win32::Foundation::E_INVALIDARG))?;
+        self.image_at(i, size)
+    }
+
+    /// PNGs for every icon, in the same order as `icons()`.
+    pub fn icon_pngs(&self, size: i32) -> Result<Vec<Vec<u8>>> {
+        (0..self.count()?).map(|i| self.image_at(i, size)).collect()
+    }
+
+    /// Grid cell size (width, height) Explorer uses for desktop items.
+    pub fn spacing(&self) -> Result<(i32, i32)> {
+        let mut pt = POINT::default();
+        unsafe { self.fv.GetSpacing(&mut pt)? };
+        Ok((pt.x, pt.y))
+    }
+
+    fn image_at(&self, i: i32, size: i32) -> Result<Vec<u8>> {
         unsafe {
-            let i = self.index_of(id)?.ok_or_else(|| windows::core::Error::from(windows::Win32::Foundation::E_INVALIDARG))?;
             let item: IShellItem = self.fv.GetItem(i)?;
             let factory: IShellItemImageFactory = item.cast()?;
             let hbmp = factory.GetImage(SIZE { cx: size, cy: size }, SIIGBF_ICONONLY)?;

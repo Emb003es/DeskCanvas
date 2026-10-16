@@ -1,0 +1,28 @@
+[package]
+name = "deskcanvas"
+version = "0.1.0"
+description = "Design your wallpaper with your real desktop icons"
+authors = ["Embo"]
+edition = "2024"
+
+[lib]
+# The `_lib` suffix avoids a lib/bin name clash on Windows (cargo#8519).
+name = "deskcanvas_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = [] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+base64 = "0.22"
+desktop-core = { path = "../desktop-core" }
+
+[profile.release]
+codegen-units = 1
+lto = true
+opt-level = 3
+panic = "abort"
+strip = true

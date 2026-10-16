@@ -2,3 +2,6 @@ target/
 node_modules/
 dist/
 poc-out/
+*.local
+src-tauri/gen/schemas/
+*.log
