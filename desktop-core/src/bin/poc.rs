@@ -9,6 +9,7 @@ fn main() -> windows::core::Result<()> {
         println!("monitor {m:?}");
     }
     let d = Desktop::open()?;
+    println!("listview origin={:?}", d.origin());
     let size = d.icon_size()?;
     let (auto, snap) = d.flags()?;
     println!("icon_size={size} auto_arrange={auto} snap_to_grid={snap}");

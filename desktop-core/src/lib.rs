@@ -1,9 +1,9 @@
-//! Read and move the real desktop icons through the shell COM APIs
+﻿//! Read and move the real desktop icons through the shell COM APIs
 //! (IShellWindows -> IShellBrowser -> IFolderView2). No process injection.
 
 use serde::Serialize;
-use windows::core::{Interface, Result, PWSTR};
-use windows::Win32::Foundation::{BOOL, LPARAM, POINT, RECT, SIZE};
+use windows::core::{Interface, Result, BOOL, PWSTR};
+use windows::Win32::Foundation::{LPARAM, POINT, RECT, SIZE};
 use windows::Win32::Graphics::Gdi::*;
 use windows::Win32::System::Com::*;
 use windows::Win32::System::Variant::VARIANT;
@@ -67,13 +67,21 @@ impl Desktop {
             let browser: IShellBrowser = sp.QueryService(&SID_STopLevelBrowser)?;
             let view = browser.QueryActiveShellView()?;
             let fv: IFolderView2 = view.cast()?;
-            // The ListView client area starts at the virtual screen's top-left.
-            let origin = POINT {
-                x: GetSystemMetrics(SM_XVIRTUALSCREEN),
-                y: GetSystemMetrics(SM_YVIRTUALSCREEN),
-            };
+            // Item positions are ListView client coords; map them via its client origin on screen.
+            let defview = view.GetWindow()?;
+            let lv = FindWindowExW(Some(defview), None, windows::core::w!("SysListView32"), None)
+                .unwrap_or(defview);
+            let mut origin = POINT::default();
+            if !ClientToScreen(lv, &mut origin).as_bool() {
+                origin = POINT { x: GetSystemMetrics(SM_XVIRTUALSCREEN), y: GetSystemMetrics(SM_YVIRTUALSCREEN) };
+            }
             Ok(Self { fv, origin })
         }
+    }
+
+    /// ListView client origin (x, y) in virtual-screen coordinates.
+    pub fn origin(&self) -> (i32, i32) {
+        (self.origin.x, self.origin.y)
     }
 
     fn count(&self) -> Result<i32> {
