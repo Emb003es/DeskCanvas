@@ -1,4 +1,5 @@
-import { memo } from "react";
+import { memo, useEffect, useRef } from "react";
+import Konva from "konva";
 import { Arrow, Ellipse, Group, Image, Line, Path, Rect, Star, Text } from "react-konva";
 import { Obj } from "../doc";
 import useImageLoader from "./useImage";
@@ -7,7 +8,28 @@ const HEART = "M50 88 C20 66 4 50 4 30 C4 15 16 5 29 5 C38 5 46 10 50 18 C54 10 
 
 function ImageBody({ o }: { o: Obj }) {
   const img = useImageLoader(o.src ?? "");
-  return <Image image={img} width={o.width} height={o.height} />;
+  const ref = useRef<Konva.Image>(null);
+  const tweak = !!(o.hue || o.saturation || o.brightness);
+  // Konva filters only apply to cached nodes; re-cache when size or values change.
+  useEffect(() => {
+    const n = ref.current;
+    if (!n || !img) return;
+    if (tweak) n.cache({ pixelRatio: 2 });
+    else n.clearCache();
+    n.getLayer()?.batchDraw();
+  }, [img, tweak, o.hue, o.saturation, o.brightness, o.width, o.height]);
+  return (
+    <Image
+      ref={ref}
+      image={img}
+      width={o.width}
+      height={o.height}
+      filters={tweak ? [Konva.Filters.HSL, Konva.Filters.Brighten] : []}
+      hue={o.hue ?? 0}
+      saturation={o.saturation ?? 0}
+      brightness={o.brightness ?? 0}
+    />
+  );
 }
 
 function Body({ o }: { o: Obj }) {

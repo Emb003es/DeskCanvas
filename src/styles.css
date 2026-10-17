@@ -429,3 +429,32 @@ button.import.capture {
   border-color: var(--accent);
   outline: 2px solid var(--accent);
 }
+
+/* Templates */
+.templates {
+  display: grid;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+.tpl-preview {
+  position: relative;
+  display: block;
+  aspect-ratio: 16 / 9;
+  border-radius: 7px;
+  overflow: hidden;
+}
+.tpl-preview img {
+  position: absolute;
+}
+.tpl-preview img:first-child {
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+.field input.hue {
+  accent-color: auto;
+  appearance: none;
+  height: 8px;
+  border-radius: 4px;
+  background: linear-gradient(90deg, #0ff, #00f, #f0f, #f00, #ff0, #0f0, #0ff);
+}

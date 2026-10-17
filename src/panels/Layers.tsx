@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Layer } from "../doc";
-import { useDoc, useStore } from "../store";
+import { confirmAsk, useDoc, useStore } from "../store";
 
 const KIND_ICON: Record<Layer["kind"], string> = { background: "🖼", objects: "🧸", drawing: "✏️", icons: "🗂" };
 
@@ -39,7 +39,10 @@ function Row({ l, index, count }: { l: Layer; index: number; count: number }) {
         className="mini"
         title="Borrar capa"
         disabled={l.kind === "background" || l.kind === "icons"}
-        onClick={(e) => (e.stopPropagation(), confirm(`¿Borrar la capa "${l.name}" y su contenido?`) && s.removeLayer(l.id))}
+        onClick={async (e) => {
+          e.stopPropagation();
+          if (await confirmAsk(`¿Borrar la capa "${l.name}" y su contenido?`)) s.removeLayer(l.id);
+        }}
       >
         ✕
       </button>

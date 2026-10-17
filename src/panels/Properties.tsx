@@ -157,6 +157,22 @@ function ObjectPanel({ o, ids }: { o: Obj; ids: string[] }) {
           </Field>
         </>
       )}
+      {o.type === "image" && (
+        <>
+          <Field label={`Color (tono) ${Math.round(o.hue ?? 0)}°`}>
+            <input type="range" className="hue" min={-180} max={180} value={o.hue ?? 0} onChange={(e) => upd({ hue: +e.target.value }, "hue")} />
+          </Field>
+          <Field label={`Saturación ${Math.round((o.saturation ?? 0) * 100)}`}>
+            <input type="range" min={-100} max={100} value={Math.round((o.saturation ?? 0) * 100)} onChange={(e) => upd({ saturation: +e.target.value / 100 }, "sat")} />
+          </Field>
+          <Field label={`Brillo ${Math.round((o.brightness ?? 0) * 100)}`}>
+            <input type="range" min={-50} max={50} value={Math.round((o.brightness ?? 0) * 100)} onChange={(e) => upd({ brightness: +e.target.value / 100 }, "bri")} />
+          </Field>
+          {!!(o.hue || o.saturation || o.brightness) && (
+            <button onClick={() => upd({ hue: 0, saturation: 0, brightness: 0 })}>↺ Color original</button>
+          )}
+        </>
+      )}
       <Field label={`Opacidad ${Math.round(o.opacity * 100)}%`}>
         <input type="range" min={5} max={100} value={Math.round(o.opacity * 100)} onChange={(e) => upd({ opacity: +e.target.value / 100 }, "opacity")} />
       </Field>

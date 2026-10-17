@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Obj, ShapeType } from "../doc";
-import { stickerPacks } from "../stickers";
+import { stickerPacks, templates } from "../stickers";
 import { useDoc, useStore } from "../store";
 
 type Item = { label: string; preview: React.ReactNode; obj: Partial<Obj> & Pick<Obj, "type"> };
@@ -37,12 +37,12 @@ const packItems = Object.fromEntries(
     list.map<Item>((s) => ({
       label: s.name,
       preview: <img src={s.src} alt="" draggable={false} />,
-      obj: { type: "image", src: s.src, width: s.width * 1.2, height: s.height * 1.2 },
+      obj: { type: "image", src: s.src, width: s.width, height: s.height, slots: s.slots },
     })),
   ]),
 );
 
-const tabs = [...Object.keys(packItems), "Básicos"];
+const tabs = ["Plantillas", ...Object.keys(packItems), "Básicos"];
 
 /** Reads a user image as a data URL and its natural size, capped to 600 px. */
 function readImage(file: File): Promise<Partial<Obj> & Pick<Obj, "type">> {
@@ -69,7 +69,8 @@ export default function Library() {
   const addObject = useStore((s) => s.addObject);
   const notify = useStore((s) => s.notify);
   const captureGuide = useStore((s) => s.captureGuide);
-  const items = tab === "Básicos" ? basics : packItems[tab];
+  const applyTemplate = useStore((s) => s.applyTemplate);
+  const items = tab === "Básicos" ? basics : packItems[tab] ?? [];
 
   const addCentered = (o: Item["obj"]) => doc && addObject({ ...o, x: doc.width / 2, y: doc.height / 2 });
 
@@ -94,6 +95,32 @@ export default function Library() {
           </button>
         ))}
       </div>
+      {tab === "Plantillas" && (
+        <div className="templates">
+          <p className="hint">Una habitación ya amueblada. Luego pulsa 🪄 Organizar y los iconos se colocan solos en los muebles.</p>
+          {templates.map((t) => (
+            <button key={t.name} className="bg-thumb" onClick={() => applyTemplate(t)} title={`Usar plantilla ${t.name}`}>
+              <span className="tpl-preview">
+                <img src={t.background} alt="" draggable={false} />
+                {t.items.map((it, i) => (
+                  <img
+                    key={i}
+                    src={it.src}
+                    alt=""
+                    draggable={false}
+                    style={{
+                      left: `${((it.x - it.width / 2) / 1920) * 100}%`,
+                      top: `${((it.y - it.height / 2) / 1080) * 100}%`,
+                      width: `${(it.width / 1920) * 100}%`,
+                    }}
+                  />
+                ))}
+              </span>
+              <span>{t.name}</span>
+            </button>
+          ))}
+        </div>
+      )}
       <div className="tiles">
         {items.map((it) => (
           <button

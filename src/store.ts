@@ -1,9 +1,11 @@
 import { create } from "zustand";
 import { produce, type Draft } from "immer";
-import { open, save } from "@tauri-apps/plugin-dialog";
+import { ask, open, save } from "@tauri-apps/plugin-dialog";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { api, DesktopState, Monitor } from "./api";
 import { extractAssets, inlineAssets, parseProject, ProjectFile } from "./project";
+import { Cell, organize, slotPoints } from "./canvas/slots";
+import type { Template } from "./stickers";
 import { Background, Doc, Layer, LayerKind, Obj, Stroke, newDoc, newLayer, newObj, uid } from "./doc";
 
 type Pos = { x: number; y: number };
@@ -73,6 +75,9 @@ type State = Snapshot & {
   saveProject: (saveAs?: boolean) => Promise<void>;
   openProject: () => Promise<void>;
   captureGuide: () => Promise<void>;
+  applyTemplate: (t: Template) => void;
+  /** Puts the icons of the current monitor onto furniture surfaces. */
+  organizeIcons: () => Promise<void>;
 };
 
 export const monitorLabel = (m: Monitor, i: number) =>
@@ -374,8 +379,8 @@ export const useStore = create<State>((set, get) => {
       set({ activeLayerId: id });
     },
 
-    newProject: () => {
-      if (hasUnsaved(get()) && !confirm("Hay cambios sin guardar. ¿Empezar un diseño nuevo igualmente?")) return;
+    newProject: async () => {
+      if (hasUnsaved(get()) && !(await confirmAsk("Hay cambios sin guardar. ¿Empezar un diseño nuevo igualmente?"))) return;
       set({ docs: NO_DOCS, savedDocs: NO_DOCS, past: [], future: [], selection: [], activeLayerId: null, projectPath: null });
       ensureDoc();
     },
@@ -402,7 +407,7 @@ export const useStore = create<State>((set, get) => {
 
     openProject: () =>
       run(async () => {
-        if (hasUnsaved(get()) && !confirm("Hay cambios sin guardar. ¿Abrir otro proyecto igualmente?")) return;
+        if (hasUnsaved(get()) && !(await confirmAsk("Hay cambios sin guardar. ¿Abrir otro proyecto igualmente?"))) return;
         const dir = await open({ title: "Abrir proyecto (carpeta .deskcanvas)", directory: true });
         if (typeof dir !== "string") return;
         const loaded = await api.loadProject(dir);
@@ -421,6 +426,50 @@ export const useStore = create<State>((set, get) => {
         ensureDoc();
         get().notify("Proyecto abierto");
       }),
+
+    applyTemplate: (t) => {
+      const doc = currentDoc(get());
+      if (!doc) return;
+      const kx = doc.width / 1920;
+      const ky = doc.height / 1080;
+      const k = Math.min(kx, ky);
+      const layer = newLayer("objects", `Muebles: ${t.name}`);
+      layer.objects = t.items.map(({ x, y, width, height, ...rest }) =>
+        newObj({ type: "image", ...rest, x: x * kx, y: y * ky, width: width * k, height: height * k }),
+      );
+      get().commit((_, d) => {
+        d.background = { kind: "image", src: t.background, color: "#f1e2d0" };
+        const iconsAt = d.layers.findIndex((l) => l.kind === "icons");
+        d.layers.splice(iconsAt < 0 ? d.layers.length : iconsAt, 0, layer);
+      });
+      set({ selection: [], activeLayerId: layer.id });
+      get().notify(`Plantilla "${t.name}" lista. Pulsa 🪄 Organizar para colocar los iconos en los muebles`);
+    },
+
+    organizeIcons: async () => {
+      const { desktop, monitors, monitorIndex } = get();
+      const m = monitors[monitorIndex];
+      const doc = currentDoc(get());
+      if (!desktop || !m || !doc) return;
+      const slots = slotPoints(furnitureOf(doc), iconCell(desktop, m));
+      if (!slots.length) return get().notify("Añade muebles con huecos (pestaña Casa o Plantillas) para organizar los iconos", true);
+      // Explorer would snap icons back to its grid, away from the furniture.
+      if (desktop.snapToGrid || desktop.autoArrange) {
+        if (!(await confirmAsk("Para poner iconos sobre los muebles hay que desactivar \"Alinear iconos a la cuadrícula\" de Windows. ¿Desactivarlo?"))) return;
+        await get().disableArrange();
+      }
+      // Read after disableArrange, which reloads positions from the desktop.
+      const { positions } = get();
+      const icons = desktop.icons
+        .map((i) => ({ id: i.id, x: positions[i.id].x - m.x, y: positions[i.id].y - m.y }))
+        .filter((p) => p.x >= 0 && p.x < m.width && p.y >= 0 && p.y < m.height);
+      const placed = organize(icons, slots);
+      get().commit((s) => {
+        for (const [id, p] of placed) s.positions[id] = { x: p.x + m.x, y: p.y + m.y };
+      });
+      const left = icons.length - placed.size;
+      get().notify(`${placed.size} iconos colocados${left ? `, ${left} sin hueco (añade más muebles)` : ""}. Pulsa "Aplicar iconos" para llevarlos al escritorio`);
+    },
 
     captureGuide: () =>
       run(async () => {
@@ -447,6 +496,20 @@ export const useStore = create<State>((set, get) => {
       }, "Captura añadida como guía bloqueada (no se exporta)"),
   };
 });
+
+/** Desktop icon cell geometry for a monitor, in its physical px. */
+export const iconCell = (d: DesktopState, m: Monitor): Cell => ({
+  w: d.cellWidth,
+  h: d.cellHeight,
+  iconTop: 4 * (m.dpi / 96),
+  iconSize: d.iconSize,
+});
+
+/** Visible objects with icon surfaces on the current design. */
+export const furnitureOf = (doc: Doc) => doc.layers.filter((l) => l.visible).flatMap((l) => l.objects.filter((o) => o.slots?.length));
+
+/** Native yes/no dialog. window.confirm does not block in Tauri, so never use it. */
+export const confirmAsk = (message: string) => ask(message, { title: "DeskCanvas", kind: "warning" });
 
 export const hasUnsaved = (s: Pick<State, "docs" | "savedDocs">) => s.docs !== s.savedDocs;
 

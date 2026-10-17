@@ -8,7 +8,7 @@ import Editor from "./canvas/Editor";
 import Library from "./panels/Library";
 import Properties from "./panels/Properties";
 import Layers from "./panels/Layers";
-import { hasUnsaved, monitorLabel, useDirty, useStore } from "./store";
+import { confirmAsk, hasUnsaved, monitorLabel, useDirty, useStore } from "./store";
 import "./styles.css";
 
 type Theme = "light" | "dark";
@@ -119,8 +119,8 @@ export default function App() {
 
   // Ask before closing with unsaved changes.
   useEffect(() => {
-    const off = getCurrentWindow().onCloseRequested((e) => {
-      if (hasUnsaved(useStore.getState()) && !confirm("Hay cambios sin guardar. ¿Cerrar DeskCanvas igualmente?")) e.preventDefault();
+    const off = getCurrentWindow().onCloseRequested(async (e) => {
+      if (hasUnsaved(useStore.getState()) && !(await confirmAsk("Hay cambios sin guardar. ¿Cerrar DeskCanvas igualmente?"))) e.preventDefault();
     });
     return () => void off.then((f) => f());
   }, []);
@@ -194,6 +194,9 @@ export default function App() {
         </button>
         <button className="icon" onClick={s.restore} disabled={s.busy || !s.hasSnapshot} title="Restaurar iconos: vuelven a como estaban antes del primer cambio">
           ↺
+        </button>
+        <button onClick={s.organizeIcons} disabled={s.busy} title="Coloca los iconos de este monitor sobre los muebles (estanterías, mesas, sofá…)">
+          🪄 Organizar
         </button>
         <button className="primary" onClick={s.apply} disabled={s.busy || !dirty}>
           Aplicar iconos

@@ -5,9 +5,10 @@ import useImageLoader from "./useImage";
 import ObjectNode from "./ObjectNode";
 import { Box, Guide, snapBox } from "./guides";
 import { gridFromIcons, IconGrid, snapToFreeCell } from "./iconGrid";
+import { slotPoints, snapToSlot } from "./slots";
 import { DesktopIcon, Monitor } from "../api";
 import { Background, Doc, Obj, Stroke } from "../doc";
-import { useDoc, useStore } from "../store";
+import { currentDoc, furnitureOf, iconCell, useDoc, useStore } from "../store";
 
 /** Fits the monitor (physical px) into the available area, keeping aspect ratio. */
 function useFit(monitor: Monitor | undefined) {
@@ -77,15 +78,18 @@ function IconNode({ icon, monitor, draggable, grid }: { icon: DesktopIcon; monit
       onDragEnd={(e) => {
         const n = e.target;
         let p = { x: Math.round(n.x()), y: Math.round(n.y()) };
-        // Same as Explorer with "Align icons to grid": land on the nearest free cell.
+        const st = useStore.getState();
+        const others = Object.entries(st.positions)
+          .filter(([id, q]) => id !== icon.id && onMonitor(q, monitor))
+          .map(([, q]) => ({ x: q.x - monitor.x, y: q.y - monitor.y }));
+        const doc = currentDoc(st);
+        const slot = doc && snapToSlot(p, slotPoints(furnitureOf(doc), iconCell(desktop, monitor)), others, w * 1.2);
         if (grid) {
-          const { positions } = useStore.getState();
-          const others = Object.entries(positions)
-            .filter(([id, q]) => id !== icon.id && onMonitor(q, monitor))
-            .map(([, q]) => ({ x: q.x - monitor.x, y: q.y - monitor.y }));
+          // Same as Explorer with "Align icons to grid": land on the nearest free cell.
           p = snapToFreeCell(p, others, grid, monitor.width, monitor.height);
-          n.to({ x: p.x, y: p.y, duration: 0.12 });
-        }
+          if (slot) st.notify('Para dejar iconos sobre los muebles desactiva "Alinear iconos a la cuadrícula" (o usa 🪄 Organizar)');
+        } else if (slot) p = slot;
+        if (p.x !== Math.round(n.x()) || p.y !== Math.round(n.y())) n.to({ x: p.x, y: p.y, duration: 0.12 });
         moveIcon(icon.id, { x: p.x + monitor.x, y: p.y + monitor.y });
       }}
     >

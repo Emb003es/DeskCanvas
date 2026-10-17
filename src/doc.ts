@@ -28,6 +28,12 @@ export type Obj = {
   strokeWidth?: number;
   /** Box label tab color. */
   accent?: string;
+  /** Color tweaks for images: hue in degrees, saturation and brightness in -1..1. */
+  hue?: number;
+  saturation?: number;
+  brightness?: number;
+  /** Furniture surfaces where icons can sit: [x0, x1, y] as fractions of width/height. */
+  slots?: number[][];
 };
 
 export type Stroke = { points: number[]; color: string; size: number; opacity: number; erase: boolean };

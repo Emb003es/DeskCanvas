@@ -25,6 +25,10 @@ fn main() -> windows::core::Result<()> {
     }
     let d = Desktop::open()?;
     println!("listview origin={:?}", d.origin());
+    // `poc grid on|off`: set "Align icons to grid" (auto-arrange stays off).
+    if args.first().is_some_and(|a| a == "grid") && args.len() == 2 {
+        d.set_flags(false, args[1] == "on")?;
+    }
     let size = d.icon_size()?;
     let (auto, snap) = d.flags()?;
     println!("icon_size={size} auto_arrange={auto} snap_to_grid={snap} spacing={:?}", d.spacing()?);
