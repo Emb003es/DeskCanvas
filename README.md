@@ -4,6 +4,12 @@ Editor para diseñar tu fondo de pantalla viendo los **iconos reales del escrito
 
 Funciona en Windows 10 y 11, con varios monitores y con escalado DPI.
 
+![Interfaz de DeskCanvas con la plantilla Salón y los iconos colocados en los muebles](docs/captura.webp)
+
+## Descargar
+
+Baja `DeskCanvas_x.y.z_x64-setup.exe` de la [última versión](https://github.com/Emb003es/DeskCanvas/releases/latest) y ábrelo. Se instala para tu usuario, sin permisos de administrador. No va firmado, así que Windows SmartScreen puede avisar la primera vez.
+
 ## Qué hace
 
 - **Iconos reales**: lee el nombre, la imagen y la posición de cada icono del escritorio. Los arrastras en el lienzo y con **Aplicar iconos** se colocan igual en el escritorio. **Restaurar iconos** los devuelve a como estaban antes del primer cambio.
@@ -100,3 +106,7 @@ public/stickers, public/backgrounds   Pegatinas y fondos SVG (generados con scri
 - La cuadrícula de iconos se calcula sobre todo el monitor, no sobre el área de trabajo, así que no descuenta la barra de tareas si la tienes arriba o a un lado.
 - La captura de pantalla incluye las ventanas abiertas. Minimízalas antes de capturar.
 - Al aplicar un fondo, la posición del wallpaper queda en "Rellenar".
+
+## Licencia
+
+[MIT](LICENSE). Las dependencias tienen sus propias licencias: ver [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).

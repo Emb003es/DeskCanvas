@@ -5,3 +5,4 @@ poc-out/
 *.local
 src-tauri/gen/schemas/
 *.log
+CLAUDE.md
