@@ -1,6 +1,6 @@
 [package]
 name = "deskcanvas"
-version = "0.1.0"
+version = "0.2.0"
 description = "Design your wallpaper with your real desktop icons"
 authors = ["Embo"]
 edition = "2024"
