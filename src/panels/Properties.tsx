@@ -118,10 +118,10 @@ function ObjectPanel({ o, ids }: { o: Obj; ids: string[] }) {
         <button onClick={() => s.reorder("down")} title="Bajar">↓</button>
         <button onClick={() => s.reorder("bottom")} title="Enviar al fondo">⤓</button>
       </div>
-      {(o.type === "text" || o.type === "box") && (
+      {(o.type === "text" || o.type === "box" || o.type === "note") && (
         <>
           <Field label={o.type === "box" ? "Etiqueta" : "Texto"}>
-            <textarea rows={2} value={o.text} onChange={(e) => upd({ text: e.target.value }, "text")} />
+            <textarea rows={o.type === "note" ? 5 : 2} value={o.text} onChange={(e) => upd({ text: e.target.value }, "text")} />
           </Field>
           <Field label="Fuente">
             <select value={o.fontFamily} onChange={(e) => upd({ fontFamily: e.target.value })}>
@@ -142,6 +142,25 @@ function ObjectPanel({ o, ids }: { o: Obj; ids: string[] }) {
           <input type="color" value={hex(o.fill)} onChange={(e) => upd({ fill: e.target.value }, "fill")} />
         </Field>
       )}
+      {o.type === "note" && (
+        <>
+          <div className="swatches">
+            {NOTE_PAPERS.map((c) => (
+              <button key={c} className={`swatch ${o.fill === c ? "on" : ""}`} style={{ background: c }} onClick={() => upd({ fill: c })} aria-label={`Papel ${c}`} />
+            ))}
+          </div>
+          <Field label="Papel">
+            <input type="color" value={hex(o.fill)} onChange={(e) => upd({ fill: e.target.value }, "fill")} />
+          </Field>
+          <Field label="Color del texto">
+            <input type="color" value={hex(o.stroke, "#3b2f40")} onChange={(e) => upd({ stroke: e.target.value }, "stroke")} />
+          </Field>
+          <Field label="Cinta">
+            <input type="color" value={hex(o.accent, "#f19cb7")} onChange={(e) => upd({ accent: e.target.value }, "accent")} />
+          </Field>
+        </>
+      )}
+      {o.type === "video" && <p className="hint">El vídeo se ve en movimiento aquí. Al exportar o poner de fondo se usa el fotograma actual.</p>}
       {o.type === "box" && (
         <Field label="Color etiqueta">
           <input type="color" value={hex(o.accent)} onChange={(e) => upd({ accent: e.target.value }, "accent")} />
@@ -182,6 +201,8 @@ function ObjectPanel({ o, ids }: { o: Obj; ids: string[] }) {
     </section>
   );
 }
+
+const NOTE_PAPERS = ["#fff3a8", "#ffd1dc", "#c9f2dc", "#cfe6ff", "#e6d7ff", "#ffdcc2", "#fffdf6", "#2f2a3f"];
 
 const SWATCHES = ["#ffffff", "#2b2730", "#f6d186", "#e27d60", "#f19cb7", "#c9a7e8", "#85cdca", "#7fb685"];
 

@@ -19,7 +19,9 @@ function hash(s: string) {
   return (h >>> 0).toString(16).padStart(8, "0");
 }
 
-const EXT: Record<string, string> = { "image/png": "png", "image/jpeg": "jpg", "image/webp": "webp", "image/gif": "gif", "image/svg+xml": "svg" };
+const EXT: Record<string, string> = { "image/png": "png", "image/jpeg": "jpg", "image/webp": "webp", "image/gif": "gif", "image/svg+xml": "svg",
+  "image/bmp": "bmp", "image/x-icon": "ico", "image/vnd.microsoft.icon": "ico", "image/avif": "avif",
+  "video/mp4": "mp4", "video/webm": "webm", "video/quicktime": "mov", "video/x-matroska": "mkv", "video/ogg": "ogv" };
 
 /** Walks every image source in the docs (objects and background images). */
 function mapSources(docs: Record<string, Doc>, fn: (src: string) => string): Record<string, Doc> {

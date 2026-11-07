@@ -3,6 +3,7 @@ import Konva from "konva";
 import { Circle, Group, Image, Layer, Line, Rect, Stage, Text, Transformer } from "react-konva";
 import useImageLoader from "./useImage";
 import ObjectNode from "./ObjectNode";
+import { readImage } from "../panels/Library";
 import { Box, Guide, snapBox } from "./guides";
 import { gridFromIcons, IconGrid, snapToFreeCell } from "./iconGrid";
 import { slotPoints, snapToSlot } from "./slots";
@@ -227,11 +228,20 @@ export default function Editor({ stageRef }: { stageRef: React.RefObject<Konva.S
   const onDrop = (e: React.DragEvent) => {
     e.preventDefault();
     const raw = e.dataTransfer.getData("application/x-deskcanvas");
+    const files = Array.from(e.dataTransfer.files);
     const stage = stageRef.current;
-    if (!raw || !stage) return;
+    if ((!raw && !files.length) || !stage) return;
     stage.setPointersPositions(e);
     const p = stage.getRelativePointerPosition();
-    if (p) s.addObject({ ...JSON.parse(raw), x: p.x, y: p.y });
+    if (!p) return;
+    if (raw) return s.addObject({ ...JSON.parse(raw), x: p.x, y: p.y });
+    // Files dropped from the Explorer: images and videos land where they are dropped.
+    files.forEach((f, i) =>
+      readImage(f).then(
+        (o) => s.addObject({ ...o, x: p.x + i * 30, y: p.y + i * 30 }),
+        (err) => s.notify(String(err.message ?? err), true),
+      ),
+    );
   };
 
   const drawTool = s.tool !== "select";

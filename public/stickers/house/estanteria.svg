@@ -1,7 +1,7 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="360" height="480" viewBox="0 0 360 480"><rect x="8" y="8" width="344" height="464" rx="10" fill="#a8703f" stroke="#4b3a4f" stroke-width="5" stroke-linejoin="round" stroke-linecap="round"/>
-<rect x="28" y="26" width="304" height="124" fill="#8a5a33"/>
-<rect x="28" y="164" width="304" height="122" fill="#8a5a33"/>
-<rect x="28" y="300" width="304" height="136" fill="#8a5a33"/>
-<rect x="20" y="146" width="320" height="18" rx="4" fill="#c98f5f" stroke="#4b3a4f" stroke-width="5" stroke-linejoin="round" stroke-linecap="round"/>
-<rect x="20" y="286" width="320" height="18" rx="4" fill="#c98f5f" stroke="#4b3a4f" stroke-width="5" stroke-linejoin="round" stroke-linecap="round"/>
-<rect x="20" y="436" width="320" height="22" rx="4" fill="#c98f5f" stroke="#4b3a4f" stroke-width="5" stroke-linejoin="round" stroke-linecap="round"/></svg>
+<svg xmlns="http://www.w3.org/2000/svg" width="360" height="480" viewBox="0 0 360 480"><defs><linearGradient id="v0" x1="0" y1="0" x2="0.35" y2="1"><stop offset="0" stop-color="#c09875"/><stop offset=".55" stop-color="#a8703f"/><stop offset="1" stop-color="#8f5f3a"/></linearGradient><linearGradient id="v1" x1="0" y1="0" x2="0.35" y2="1"><stop offset="0" stop-color="#ab886c"/><stop offset=".55" stop-color="#8a5a33"/><stop offset="1" stop-color="#774d30"/></linearGradient><linearGradient id="v2" x1="0" y1="0" x2="0.35" y2="1"><stop offset="0" stop-color="#d8ae8c"/><stop offset=".55" stop-color="#c98f5f"/><stop offset="1" stop-color="#aa7854"/></linearGradient></defs><rect x="8" y="8" width="344" height="464" rx="10" fill="url(#v0)" stroke="#4b3a4f" stroke-width="5" stroke-linejoin="round" stroke-linecap="round"/>
+<rect x="28" y="26" width="304" height="124" fill="url(#v1)"/>
+<rect x="28" y="164" width="304" height="122" fill="url(#v1)"/>
+<rect x="28" y="300" width="304" height="136" fill="url(#v1)"/>
+<rect x="20" y="146" width="320" height="18" rx="4" fill="url(#v2)" stroke="#4b3a4f" stroke-width="5" stroke-linejoin="round" stroke-linecap="round"/>
+<rect x="20" y="286" width="320" height="18" rx="4" fill="url(#v2)" stroke="#4b3a4f" stroke-width="5" stroke-linejoin="round" stroke-linecap="round"/>
+<rect x="20" y="436" width="320" height="22" rx="4" fill="url(#v2)" stroke="#4b3a4f" stroke-width="5" stroke-linejoin="round" stroke-linecap="round"/></svg>

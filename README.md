@@ -17,8 +17,9 @@ Baja `DeskCanvas_x.y.z_x64-setup.exe` de la [última versión](https://github.co
 - **Lienzo** del tamaño físico de cada monitor (un diseño por monitor), con estas capas: fondo, objetos, dibujo, iconos y guía. Cada capa se puede reordenar, ocultar, bloquear y renombrar.
 - **Plantillas de habitación** (Salón, Dormitorio, Estudio gamer, Nórdico): fondo y muebles colocados con un clic.
 - **Muebles con huecos para iconos** (pack Casa): estanterías, mesas, escritorio, sofá, mueble de TV, cómoda, tablón de corcho, ventana… Si sueltas un icono encima de uno, encaja en el hueco libre más cercano. **🪄 Organizar** reparte solo todos los iconos del monitor por los muebles. Para que Windows respete esas posiciones hay que desactivar "Alinear iconos a la cuadrícula", y la app lo pregunta antes de hacerlo.
-- **Pegatinas**: 99 originales en SVG repartidas en siete packs (Casa, Habitación acogedora, Minimalista, Pixel art, Espacio, Naturaleza y Neón). En cualquier imagen se puede ajustar el tono, la saturación y el brillo, además de texto, cajas con etiqueta, formas y tus propias imágenes. Se pueden mover, escalar, rotar, voltear, duplicar y cambiar de orden.
+- **Pegatinas**: 99 originales en SVG repartidas en siete packs (Casa, Habitación acogedora, Minimalista, Pixel art, Espacio, Naturaleza y Neón), con volumen y borde troquelado blanco como las de vinilo. En cualquier imagen se puede ajustar el tono, la saturación y el brillo, además de texto, cajas con etiqueta, formas y tus propias imágenes (PNG, JPG, WebP, GIF, SVG, BMP, ICO, AVIF) o vídeos (MP4, WebM), desde el botón o arrastrándolos desde el Explorador. Los vídeos se ven en movimiento en el editor; al exportar se usa el fotograma actual. Se pueden mover, escalar, rotar, voltear, duplicar y cambiar de orden.
 - **Dibujo libre**: pincel y goma con color, grosor y opacidad. La goma solo borra en su propia capa.
+- **Notas**: notas adhesivas en ocho colores con cinta, sombra y esquina doblada. Doble clic para escribir; se cambian el papel, la cinta, la letra y el color del texto.
 - **Fondo**: 17 fondos prediseñados (5 de ellos son habitaciones vacías para amueblar) (atardecer, noche estrellada, synthwave, ciudad pixel, habitación…), color liso, degradado con ángulo o una imagen tuya. Los prediseñados son SVG y se ven nítidos a cualquier resolución.
 - **Imán y guías** a los bordes y centros del lienzo y de otros objetos, más una cuadrícula opcional.
 - **Deshacer y rehacer** de todo, incluidos los movimientos de iconos.
@@ -90,7 +91,7 @@ La primera compilación descarga NSIS y WiX automáticamente. Los instaladores n
 - **Iconos**: se usan las API de shell de Windows (`IShellWindows` → `IShellBrowser` → `IFolderView2`) con `GetItemPosition`, `SelectAndPositionItems` y `SaveViewState`. **No se inyecta nada en Explorer** ni se lee su memoria, así que no salta el antivirus y funciona igual tras las actualizaciones de Windows 11. Las imágenes de los iconos salen de `IShellItemImageFactory`.
 - **Coordenadas**: todo se maneja en píxeles físicos (la app es Per-Monitor DPI Aware v2). Las posiciones se convierten con el origen real del ListView del escritorio, por lo que funcionan los monitores situados a la izquierda o arriba del principal (coordenadas negativas).
 - **Fondo de pantalla**: se aplica con `IDesktopWallpaper` a cada monitor. La imagen se guarda en `Imágenes\DeskCanvas`.
-- **Formato de proyecto**: es una carpeta `Nombre.deskcanvas/` que contiene `project.json` (diseños por monitor y posiciones de iconos) y `assets/`, donde van las imágenes importadas y las capturas, sin duplicados.
+- **Formato de proyecto**: es una carpeta `Nombre.deskcanvas/` que contiene `project.json` (diseños por monitor y posiciones de iconos) y `assets/`, donde van las imágenes y vídeos importados y las capturas, sin duplicados.
 
 Estructura:
 

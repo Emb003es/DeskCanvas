@@ -1,3 +1,3 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="640" height="170" viewBox="0 0 640 170"><ellipse cx="320" cy="85" rx="310" ry="76" fill="#e8a87c" stroke="#4b3a4f" stroke-width="5" stroke-linejoin="round" stroke-linecap="round"/>
-<ellipse cx="320" cy="85" rx="240" ry="54" fill="#f6d186"/>
-<ellipse cx="320" cy="85" rx="160" ry="34" fill="#c38d9e"/></svg>
+<svg xmlns="http://www.w3.org/2000/svg" width="640" height="170" viewBox="0 0 640 170"><defs><linearGradient id="v0" x1="0" y1="0" x2="0.35" y2="1"><stop offset="0" stop-color="#eec0a1"/><stop offset=".55" stop-color="#e8a87c"/><stop offset="1" stop-color="#c48d6c"/></linearGradient><linearGradient id="v1" x1="0" y1="0" x2="0.35" y2="1"><stop offset="0" stop-color="#f9dea8"/><stop offset=".55" stop-color="#f6d186"/><stop offset="1" stop-color="#cfae74"/></linearGradient><linearGradient id="v2" x1="0" y1="0" x2="0.35" y2="1"><stop offset="0" stop-color="#d4adb9"/><stop offset=".55" stop-color="#c38d9e"/><stop offset="1" stop-color="#a57688"/></linearGradient></defs><ellipse cx="320" cy="85" rx="310" ry="76" fill="url(#v0)" stroke="#4b3a4f" stroke-width="5" stroke-linejoin="round" stroke-linecap="round"/>
+<ellipse cx="320" cy="85" rx="240" ry="54" fill="url(#v1)"/>
+<ellipse cx="320" cy="85" rx="160" ry="34" fill="url(#v2)"/></svg>

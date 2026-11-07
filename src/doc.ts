@@ -9,7 +9,7 @@ export type ShapeType = "rect" | "ellipse" | "triangle" | "star" | "heart" | "ar
 
 export type Obj = {
   id: string;
-  type: "image" | "text" | "shape" | "box";
+  type: "image" | "video" | "text" | "shape" | "box" | "note";
   x: number;
   y: number;
   width: number;
@@ -26,7 +26,7 @@ export type Obj = {
   fill?: string;
   stroke?: string;
   strokeWidth?: number;
-  /** Box label tab color. */
+  /** Box label tab color; tape color on notes. */
   accent?: string;
   /** Color tweaks for images: hue in degrees, saturation and brightness in -1..1. */
   hue?: number;

@@ -1,5 +1,5 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="260" height="190" viewBox="0 0 260 190"><rect x="8" y="8" width="244" height="174" rx="8" fill="#c98f5f" stroke="#4b3a4f" stroke-width="5" stroke-linejoin="round" stroke-linecap="round"/>
-<rect x="26" y="26" width="208" height="138" fill="#cfe8f3"/>
-<circle cx="190" cy="62" r="16" fill="#f9d56e"/>
-<path d="M26 164 l60 -70 l40 44 l34 -30 l74 56 z" fill="#7fb685"/>
+<svg xmlns="http://www.w3.org/2000/svg" width="260" height="190" viewBox="0 0 260 190"><defs><linearGradient id="v0" x1="0" y1="0" x2="0.35" y2="1"><stop offset="0" stop-color="#d8ae8c"/><stop offset=".55" stop-color="#c98f5f"/><stop offset="1" stop-color="#aa7854"/></linearGradient><linearGradient id="v1" x1="0" y1="0" x2="0.35" y2="1"><stop offset="0" stop-color="#dceef6"/><stop offset=".55" stop-color="#cfe8f3"/><stop offset="1" stop-color="#afc1ce"/></linearGradient><linearGradient id="v2" x1="0" y1="0" x2="0.35" y2="1"><stop offset="0" stop-color="#fbe197"/><stop offset=".55" stop-color="#f9d56e"/><stop offset="1" stop-color="#d2b261"/></linearGradient><linearGradient id="v3" x1="0" y1="0" x2="0.35" y2="1"><stop offset="0" stop-color="#a3caa7"/><stop offset=".55" stop-color="#7fb685"/><stop offset="1" stop-color="#6e9874"/></linearGradient></defs><rect x="8" y="8" width="244" height="174" rx="8" fill="url(#v0)" stroke="#4b3a4f" stroke-width="5" stroke-linejoin="round" stroke-linecap="round"/>
+<rect x="26" y="26" width="208" height="138" fill="url(#v1)"/>
+<circle cx="190" cy="62" r="16" fill="url(#v2)"/>
+<path d="M26 164 l60 -70 l40 44 l34 -30 l74 56 z" fill="url(#v3)"/>
 <rect x="26" y="26" width="208" height="138" fill="none" stroke="#4b3a4f" stroke-width="5" stroke-linejoin="round" stroke-linecap="round"/></svg>

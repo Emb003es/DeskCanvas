@@ -244,7 +244,31 @@ button.toggle.on {
   object-fit: contain;
   transition: transform 0.15s;
 }
+.note-chip {
+  position: relative;
+  width: 54px;
+  height: 52px;
+  margin: 8px 0 4px;
+  clip-path: polygon(0 0, 100% 0, 100% 82%, 82% 100%, 0 100%);
+  box-shadow: inset 0 10px 14px rgba(255, 255, 255, 0.45);
+  transform: rotate(-3deg);
+  transition: transform 0.15s;
+}
+.note-chip::before {
+  content: "";
+  position: absolute;
+  left: 15px;
+  top: 0;
+  width: 24px;
+  height: 9px;
+  background: var(--tape);
+  opacity: 0.8;
+}
+.tile:has(.note-chip) {
+  filter: drop-shadow(0 3px 4px rgba(43, 29, 51, 0.25));
+}
 .tile:hover img,
+.tile:hover .note-chip,
 .tile:hover .glyph {
   transform: translateY(-3px) rotate(-3deg) scale(1.06);
 }

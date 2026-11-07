@@ -1,4 +1,4 @@
-import { memo, useEffect, useRef } from "react";
+import { memo, useEffect, useRef, useState } from "react";
 import Konva from "konva";
 import { Arrow, Ellipse, Group, Image, Line, Path, Rect, Star, Text } from "react-konva";
 import { Obj } from "../doc";
@@ -32,12 +32,104 @@ function ImageBody({ o }: { o: Obj }) {
   );
 }
 
+/** Plays a muted looping video into a Konva image; exports keep the current frame. */
+function VideoBody({ o }: { o: Obj }) {
+  const ref = useRef<Konva.Image>(null);
+  const [video, setVideo] = useState<HTMLVideoElement>();
+  useEffect(() => {
+    const v = document.createElement("video");
+    Object.assign(v, { src: o.src ?? "", muted: true, loop: true, playsInline: true, autoplay: true });
+    v.onloadeddata = () => {
+      setVideo(v);
+      v.play().catch(() => {});
+    };
+    return () => {
+      v.onloadeddata = null;
+      v.pause();
+      v.removeAttribute("src");
+      v.load();
+    };
+  }, [o.src]);
+  useEffect(() => {
+    const layer = ref.current?.getLayer();
+    if (!video || !layer) return;
+    const anim = new Konva.Animation(() => {}, layer);
+    anim.start();
+    return () => void anim.stop();
+  }, [video]);
+  return <Image ref={ref} image={video} width={o.width} height={o.height} />;
+}
+
+/** Sticky note: paper with soft shadow, curled corner and a strip of washi tape. */
+function NoteBody({ o }: { o: Obj }) {
+  const { width: w, height: h } = o;
+  const paper = o.fill ?? "#fff3a8";
+  const fold = Math.min(w, h) * 0.14;
+  const pad = Math.max(16, Math.min(w, h) * 0.1);
+  const tapeW = Math.min(w * 0.45, 180);
+  const tapeH = Math.max(22, Math.min(h * 0.12, 44));
+  return (
+    <>
+      <Line
+        points={[0, 0, w, 0, w, h - fold, w - fold, h, 0, h]}
+        closed
+        fill={paper}
+        shadowColor="#2b1d33"
+        shadowBlur={Math.min(w, h) * 0.08}
+        shadowOffsetY={Math.min(w, h) * 0.04}
+        shadowOpacity={0.3}
+      />
+      {/* Light from above, as on real paper. */}
+      <Line
+        points={[0, 0, w, 0, w, h - fold, w - fold, h, 0, h]}
+        closed
+        fillLinearGradientStartPoint={{ x: 0, y: 0 }}
+        fillLinearGradientEndPoint={{ x: 0, y: h }}
+        fillLinearGradientColorStops={[0, "rgba(255,255,255,0.45)", 0.4, "rgba(255,255,255,0)", 1, "rgba(60,30,40,0.08)"]}
+      />
+      <Line points={[w, h - fold, w - fold * 0.85, h - fold * 0.85, w - fold, h]} closed fill="rgba(60,30,40,0.18)" />
+      <Text
+        text={o.text}
+        x={pad}
+        y={pad + tapeH * 0.4}
+        width={w - pad * 2}
+        height={h - pad * 2 - tapeH * 0.4}
+        fontSize={o.fontSize}
+        fontFamily={o.fontFamily}
+        fill={o.stroke ?? "#3b2f40"}
+        lineHeight={1.25}
+        wrap="word"
+        ellipsis
+      />
+      <Rect
+        x={w / 2}
+        y={0}
+        width={tapeW}
+        height={tapeH}
+        offsetX={tapeW / 2}
+        offsetY={tapeH / 2}
+        rotation={-3}
+        fill={o.accent ?? "#f19cb7"}
+        opacity={0.75}
+        cornerRadius={2}
+        shadowColor="#2b1d33"
+        shadowBlur={4}
+        shadowOpacity={0.15}
+      />
+    </>
+  );
+}
+
 function Body({ o }: { o: Obj }) {
   const { width: w, height: h, fill, stroke, strokeWidth = 0 } = o;
   const paint = { fill, stroke, strokeWidth, strokeScaleEnabled: false };
   switch (o.type) {
     case "image":
       return <ImageBody o={o} />;
+    case "video":
+      return <VideoBody o={o} />;
+    case "note":
+      return <NoteBody o={o} />;
     case "text":
       return (
         <Text
@@ -131,6 +223,8 @@ function ObjectNode({ o, draggable, onPointerDown, onChange }: Props) {
       opacity={o.opacity}
       draggable={draggable}
       onMouseDown={(e) => onPointerDown(o.id, e.evt.shiftKey)}
+      // Double-click a text, note or box to type in its field on the right.
+      onDblClick={() => document.querySelector<HTMLTextAreaElement>(".props textarea")?.select()}
       onTransformEnd={(e) => {
         const n = e.currentTarget;
         const sx = Math.abs(n.scaleX());
@@ -142,7 +236,7 @@ function ObjectNode({ o, draggable, onPointerDown, onChange }: Props) {
           rotation: n.rotation(),
           width: Math.max(4, o.width * sx),
           height: Math.max(4, o.height * sy),
-          ...(o.type === "text" || o.type === "box" ? { fontSize: Math.max(6, (o.fontSize ?? 24) * (o.type === "text" ? sy : 1)) } : {}),
+          ...(o.type === "text" || o.type === "box" || o.type === "note" ? { fontSize: Math.max(6, (o.fontSize ?? 24) * (o.type === "text" ? sy : 1)) } : {}),
         });
       }}
     >

@@ -6,154 +6,154 @@ export const stickerPacks: Record<string, Sticker[]> = {
   {
    "name": "Estante",
    "src": "/stickers/cozy/estante.svg",
-   "width": 461,
-   "height": 245
+   "width": 602,
+   "height": 386
   },
   {
    "name": "Mesa",
    "src": "/stickers/cozy/mesa.svg",
-   "width": 432,
-   "height": 288
+   "width": 564,
+   "height": 420
   },
   {
    "name": "Planta",
    "src": "/stickers/cozy/planta.svg",
-   "width": 259,
-   "height": 374
+   "width": 374,
+   "height": 490
   },
   {
    "name": "Cactus",
    "src": "/stickers/cozy/cactus.svg",
-   "width": 202,
-   "height": 317
+   "width": 300,
+   "height": 415
   },
   {
    "name": "Marco",
    "src": "/stickers/cozy/marco.svg",
-   "width": 317,
-   "height": 259
+   "width": 415,
+   "height": 357
   },
   {
    "name": "Lámpara",
    "src": "/stickers/cozy/lampara.svg",
-   "width": 230,
-   "height": 432
+   "width": 363,
+   "height": 564
   },
   {
    "name": "Taza",
    "src": "/stickers/cozy/taza.svg",
-   "width": 216,
-   "height": 202
+   "width": 282,
+   "height": 268
   },
   {
    "name": "Libros",
    "src": "/stickers/cozy/libros.svg",
-   "width": 302,
-   "height": 259
+   "width": 395,
+   "height": 351
   },
   {
    "name": "Reloj",
    "src": "/stickers/cozy/reloj.svg",
-   "width": 259,
-   "height": 259
+   "width": 340,
+   "height": 340
   },
   {
    "name": "Ventana",
    "src": "/stickers/cozy/ventana.svg",
-   "width": 346,
-   "height": 403
+   "width": 469,
+   "height": 527
   },
   {
    "name": "Alfombra",
    "src": "/stickers/cozy/alfombra.svg",
-   "width": 518,
-   "height": 216
+   "width": 677,
+   "height": 374
   },
   {
    "name": "Planta colgante",
    "src": "/stickers/cozy/planta-colgante.svg",
-   "width": 259,
-   "height": 418
+   "width": 386,
+   "height": 544
   },
   {
    "name": "Vela",
    "src": "/stickers/cozy/vela.svg",
-   "width": 144,
-   "height": 259
+   "width": 225,
+   "height": 340
   }
  ],
  "Minimalista": [
   {
    "name": "Arco",
    "src": "/stickers/minimal/arco.svg",
-   "width": 288,
-   "height": 346
+   "width": 395,
+   "height": 452
   },
   {
    "name": "Mancha",
    "src": "/stickers/minimal/mancha.svg",
-   "width": 346,
-   "height": 288
+   "width": 452,
+   "height": 395
   },
   {
    "name": "Sol",
    "src": "/stickers/minimal/sol.svg",
-   "width": 288,
-   "height": 288
+   "width": 377,
+   "height": 377
   },
   {
    "name": "Ola",
    "src": "/stickers/minimal/ola.svg",
-   "width": 432,
-   "height": 115
+   "width": 564,
+   "height": 248
   },
   {
    "name": "Hoja",
    "src": "/stickers/minimal/hoja.svg",
-   "width": 230,
-   "height": 346
+   "width": 337,
+   "height": 452
   },
   {
    "name": "Anillo",
    "src": "/stickers/minimal/anillo.svg",
-   "width": 288,
-   "height": 288
+   "width": 377,
+   "height": 377
   },
   {
    "name": "Puntos",
    "src": "/stickers/minimal/puntos.svg",
-   "width": 288,
-   "height": 288
+   "width": 377,
+   "height": 377
   },
   {
    "name": "Garabato",
    "src": "/stickers/minimal/garabato.svg",
-   "width": 374,
-   "height": 115
+   "width": 490,
+   "height": 230
   },
   {
    "name": "Semicírculo",
    "src": "/stickers/minimal/semicirculo.svg",
-   "width": 317,
-   "height": 173
+   "width": 415,
+   "height": 271
   },
   {
    "name": "Destello",
    "src": "/stickers/minimal/destello.svg",
-   "width": 230,
-   "height": 230
+   "width": 302,
+   "height": 302
   },
   {
    "name": "Marco línea",
    "src": "/stickers/minimal/marco-linea.svg",
-   "width": 374,
-   "height": 259
+   "width": 490,
+   "height": 374
   },
   {
    "name": "Montañas",
    "src": "/stickers/minimal/montanas.svg",
-   "width": 432,
-   "height": 230
+   "width": 564,
+   "height": 363
   }
  ],
  "Casa": [
@@ -405,246 +405,246 @@ export const stickerPacks: Record<string, Sticker[]> = {
   {
    "name": "Corazón",
    "src": "/stickers/pixel/corazon.svg",
-   "width": 259,
-   "height": 230
+   "width": 340,
+   "height": 311
   },
   {
    "name": "Estrella",
    "src": "/stickers/pixel/estrella.svg",
-   "width": 317,
-   "height": 288
+   "width": 415,
+   "height": 386
   },
   {
    "name": "Seta",
    "src": "/stickers/pixel/seta.svg",
-   "width": 288,
-   "height": 288
+   "width": 374,
+   "height": 374
   },
   {
    "name": "Moneda",
    "src": "/stickers/pixel/moneda.svg",
-   "width": 230,
-   "height": 288
+   "width": 317,
+   "height": 374
   },
   {
    "name": "Poción",
    "src": "/stickers/pixel/pocion.svg",
-   "width": 259,
-   "height": 317
+   "width": 357,
+   "height": 415
   },
   {
    "name": "Fantasma",
    "src": "/stickers/pixel/fantasma.svg",
-   "width": 288,
-   "height": 317
+   "width": 386,
+   "height": 415
   },
   {
    "name": "Maceta",
    "src": "/stickers/pixel/maceta.svg",
-   "width": 288,
-   "height": 317
+   "width": 386,
+   "height": 415
   },
   {
    "name": "Mando",
    "src": "/stickers/pixel/mando.svg",
-   "width": 403,
-   "height": 230
+   "width": 530,
+   "height": 357
   },
   {
    "name": "Café",
    "src": "/stickers/pixel/cafe.svg",
-   "width": 288,
-   "height": 288
+   "width": 374,
+   "height": 374
   },
   {
    "name": "Flor",
    "src": "/stickers/pixel/flor.svg",
-   "width": 259,
-   "height": 317
+   "width": 357,
+   "height": 415
   },
   {
    "name": "Luna",
    "src": "/stickers/pixel/luna.svg",
-   "width": 259,
-   "height": 259
+   "width": 340,
+   "height": 340
   },
   {
    "name": "Llave",
    "src": "/stickers/pixel/llave.svg",
-   "width": 346,
-   "height": 173
+   "width": 455,
+   "height": 282
   },
   {
    "name": "Gema",
    "src": "/stickers/pixel/gema.svg",
-   "width": 317,
-   "height": 259
+   "width": 415,
+   "height": 357
   },
   {
    "name": "Cofre",
    "src": "/stickers/pixel/cofre.svg",
-   "width": 346,
-   "height": 288
+   "width": 455,
+   "height": 397
   },
   {
    "name": "Árbol",
    "src": "/stickers/pixel/arbol.svg",
-   "width": 317,
-   "height": 346
+   "width": 426,
+   "height": 455
   },
   {
    "name": "Casa",
    "src": "/stickers/pixel/casa.svg",
-   "width": 346,
-   "height": 317
+   "width": 455,
+   "height": 426
   },
   {
    "name": "Nube",
    "src": "/stickers/pixel/nube.svg",
-   "width": 346,
-   "height": 202
+   "width": 455,
+   "height": 311
   },
   {
    "name": "Gato",
    "src": "/stickers/pixel/gato.svg",
-   "width": 317,
-   "height": 259
+   "width": 415,
+   "height": 357
   },
   {
    "name": "Rayo",
    "src": "/stickers/pixel/rayo.svg",
-   "width": 230,
-   "height": 259
+   "width": 311,
+   "height": 340
   },
   {
    "name": "Espada",
    "src": "/stickers/pixel/espada.svg",
-   "width": 346,
-   "height": 346
+   "width": 455,
+   "height": 455
   }
  ],
  "Espacio": [
   {
    "name": "Planeta",
    "src": "/stickers/space/planeta.svg",
-   "width": 374,
-   "height": 288
+   "width": 490,
+   "height": 403
   },
   {
    "name": "Luna llena",
    "src": "/stickers/space/luna-llena.svg",
-   "width": 288,
-   "height": 288
+   "width": 377,
+   "height": 377
   },
   {
    "name": "Cohete",
    "src": "/stickers/space/cohete.svg",
-   "width": 230,
-   "height": 403
+   "width": 354,
+   "height": 527
   },
   {
    "name": "Estrella fugaz",
    "src": "/stickers/space/estrella-fugaz.svg",
-   "width": 432,
-   "height": 230
+   "width": 564,
+   "height": 363
   },
   {
    "name": "Ovni",
    "src": "/stickers/space/ovni.svg",
-   "width": 374,
-   "height": 288
+   "width": 490,
+   "height": 403
   },
   {
    "name": "Astronauta",
    "src": "/stickers/space/astronauta.svg",
-   "width": 288,
-   "height": 374
+   "width": 403,
+   "height": 490
   },
   {
    "name": "Cometa",
    "src": "/stickers/space/cometa.svg",
-   "width": 432,
-   "height": 202
+   "width": 564,
+   "height": 334
   },
   {
    "name": "Estrellas",
    "src": "/stickers/space/estrellas.svg",
-   "width": 346,
-   "height": 288
+   "width": 452,
+   "height": 395
   },
   {
    "name": "Satélite",
    "src": "/stickers/space/satelite.svg",
-   "width": 374,
-   "height": 230
+   "width": 490,
+   "height": 346
   },
   {
    "name": "Agujero de gusano",
    "src": "/stickers/space/agujero-de-gusano.svg",
-   "width": 317,
-   "height": 317
+   "width": 415,
+   "height": 415
   }
  ],
  "Naturaleza": [
   {
    "name": "Girasol",
    "src": "/stickers/nature/girasol.svg",
-   "width": 288,
-   "height": 403
+   "width": 412,
+   "height": 527
   },
   {
    "name": "Tulipán",
    "src": "/stickers/nature/tulipan.svg",
-   "width": 202,
-   "height": 374
+   "width": 317,
+   "height": 490
   },
   {
    "name": "Monstera",
    "src": "/stickers/nature/monstera.svg",
-   "width": 346,
-   "height": 346
+   "width": 452,
+   "height": 452
   },
   {
    "name": "Seta",
    "src": "/stickers/nature/seta.svg",
-   "width": 259,
-   "height": 259
+   "width": 340,
+   "height": 340
   },
   {
    "name": "Mariposa",
    "src": "/stickers/nature/mariposa.svg",
-   "width": 317,
-   "height": 259
+   "width": 415,
+   "height": 357
   },
   {
    "name": "Arcoíris",
    "src": "/stickers/nature/arcoiris.svg",
-   "width": 432,
-   "height": 245
+   "width": 564,
+   "height": 377
   },
   {
    "name": "Hojas",
    "src": "/stickers/nature/hojas.svg",
-   "width": 346,
-   "height": 230
+   "width": 452,
+   "height": 337
   },
   {
    "name": "Abeja",
    "src": "/stickers/nature/abeja.svg",
-   "width": 288,
-   "height": 230
+   "width": 377,
+   "height": 320
   },
   {
    "name": "Cactus redondo",
    "src": "/stickers/nature/cactus-redondo.svg",
-   "width": 230,
-   "height": 259
+   "width": 311,
+   "height": 340
   },
   {
    "name": "Ramo",
    "src": "/stickers/nature/ramo.svg",
-   "width": 288,
-   "height": 374
+   "width": 403,
+   "height": 490
   }
  ],
  "Neón": [

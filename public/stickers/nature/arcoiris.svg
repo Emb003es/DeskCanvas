@@ -1,6 +1,7 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="300" height="170" viewBox="0 0 300 170"><path d="M20 160 a130 130 0 0 1 260 0" fill="none" stroke="#e8505b" stroke-width="20"/>
+<svg xmlns="http://www.w3.org/2000/svg" width="392" height="262" viewBox="-46 -46 392 262"><defs><linearGradient id="v0" x1="0" y1="0" x2="0.35" y2="1"><stop offset="0" stop-color="#ffffff"/><stop offset=".55" stop-color="#ffffff"/><stop offset="1" stop-color="#d6d4d8"/></linearGradient><filter id="cut" x="-50%" y="-50%" width="200%" height="200%" color-interpolation-filters="sRGB"><feMorphology in="SourceAlpha" operator="dilate" radius="6.3"/><feGaussianBlur stdDeviation="4.2"/><feComponentTransfer result="d"><feFuncA type="linear" slope="8" intercept="-2"/></feComponentTransfer><feFlood flood-color="#ffffff"/><feComposite in2="d" operator="in" result="b"/><feGaussianBlur in="d" stdDeviation="9.5"/><feOffset dy="6.3" result="o"/><feFlood flood-color="#2b1d33" flood-opacity=".3"/><feComposite in2="o" operator="in" result="s"/><feMerge><feMergeNode in="s"/><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs><g filter="url(#cut)">
+<path d="M20 160 a130 130 0 0 1 260 0" fill="none" stroke="#e8505b" stroke-width="20"/>
 <path d="M40 160 a110 110 0 0 1 220 0" fill="none" stroke="#f3a256" stroke-width="20"/>
 <path d="M60 160 a90 90 0 0 1 180 0" fill="none" stroke="#f9d56e" stroke-width="20"/>
 <path d="M80 160 a70 70 0 0 1 140 0" fill="none" stroke="#6cc551" stroke-width="20"/>
 <path d="M100 160 a50 50 0 0 1 100 0" fill="none" stroke="#4fa3e0" stroke-width="20"/>
-<ellipse cx="40" cy="156" rx="40" ry="16" fill="#fff"/><ellipse cx="262" cy="156" rx="40" ry="16" fill="#fff"/></svg>
+<ellipse cx="40" cy="156" rx="40" ry="16" fill="url(#v0)"/><ellipse cx="262" cy="156" rx="40" ry="16" fill="url(#v0)"/></g></svg>

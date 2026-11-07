@@ -192,15 +192,23 @@ fn valid_asset_name(name: &str) -> bool {
     let Some((stem, ext)) = name.split_once('.') else { return false };
     stem.len() == 8
         && stem.chars().all(|c| c.is_ascii_hexdigit())
-        && ["png", "jpg", "webp", "gif", "svg", "bin"].contains(&ext)
+        && MIME.iter().any(|(e, _)| *e == ext)
 }
 
-const MIME: [(&str, &str); 6] = [
+const MIME: [(&str, &str); 14] = [
     ("png", "image/png"),
     ("jpg", "image/jpeg"),
     ("webp", "image/webp"),
     ("gif", "image/gif"),
     ("svg", "image/svg+xml"),
+    ("bmp", "image/bmp"),
+    ("ico", "image/x-icon"),
+    ("avif", "image/avif"),
+    ("mp4", "video/mp4"),
+    ("webm", "video/webm"),
+    ("mov", "video/quicktime"),
+    ("mkv", "video/x-matroska"),
+    ("ogv", "video/ogg"),
     ("bin", "application/octet-stream"),
 ];
 
@@ -269,6 +277,7 @@ mod tests {
     fn asset_names_cannot_escape() {
         assert!(super::valid_asset_name("0a1b2c3d.png"));
         assert!(!super::valid_asset_name("../evil.png"));
+        assert!(super::valid_asset_name("0a1b2c3d.mp4"));
         assert!(!super::valid_asset_name("0a1b2c3d.exe"));
         assert!(!super::valid_asset_name("0a1b2c3d/../x.png"));
     }

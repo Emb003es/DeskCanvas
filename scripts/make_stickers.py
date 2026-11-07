@@ -1,6 +1,7 @@
 """Generates the built-in sticker packs (original artwork) into public/stickers/.
 Run: python scripts/make_stickers.py"""
 import os
+import re
 import unicodedata
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -114,14 +115,69 @@ minimal = {
 }
 
 
-def write(pack, items, scale=1.44):
+def mix(c, t, k):
+    """Blends hex color c toward hex t by k (0..1)."""
+    a = [int(c[i:i + 2], 16) for i in (1, 3, 5)]
+    b = [int(t[i:i + 2], 16) for i in (1, 3, 5)]
+    return "#" + "".join(f"{round(x + (y - x) * k):02x}" for x, y in zip(a, b))
+
+
+def shade(body):
+    """Gives every flat fill volume: lit from above, darker at the base."""
+    grads = {}
+
+    def sub(m):
+        c = m.group(1).lower()
+        if len(c) == 4:
+            c = "#" + "".join(ch * 2 for ch in c[1:])
+        if c not in grads:
+            grads[c] = f"v{len(grads)}"
+        return f'fill="url(#{grads[c]})"'
+
+    body = re.sub(r'fill="(#[0-9a-fA-F]{6}|#[0-9a-fA-F]{3})"', sub, body)
+    defs = "".join(
+        f'<linearGradient id="{i}" x1="0" y1="0" x2="0.35" y2="1">'
+        f'<stop offset="0" stop-color="{mix(c, "#ffffff", 0.28)}"/><stop offset=".55" stop-color="{c}"/>'
+        f'<stop offset="1" stop-color="{mix(c, "#1e1024", 0.18)}"/></linearGradient>'
+        for c, i in grads.items())
+    return defs, body
+
+
+def die_cut(w, h, crisp=False):
+    """White die-cut border and soft drop shadow, like a real vinyl sticker. Returns (filter, padding)."""
+    r = round(max(w, h) * 0.035, 1)
+    blur, dy = round(r * 0.9, 1), round(r * 0.6, 1)
+    pad = int(r + blur * 3 + dy) + 1
+    edge = (f'<feMorphology in="SourceAlpha" operator="dilate" radius="{r}" result="d"/>' if crisp else
+            f'<feMorphology in="SourceAlpha" operator="dilate" radius="{r * 0.6}"/><feGaussianBlur stdDeviation="{r * 0.4}"/>'
+            '<feComponentTransfer result="d"><feFuncA type="linear" slope="8" intercept="-2"/></feComponentTransfer>')
+    f = (f'<filter id="cut" x="-50%" y="-50%" width="200%" height="200%" color-interpolation-filters="sRGB">{edge}'
+         '<feFlood flood-color="#ffffff"/><feComposite in2="d" operator="in" result="b"/>'
+         f'<feGaussianBlur in="d" stdDeviation="{blur}"/><feOffset dy="{dy}" result="o"/>'
+         '<feFlood flood-color="#2b1d33" flood-opacity=".3"/><feComposite in2="o" operator="in" result="s"/>'
+         '<feMerge><feMergeNode in="s"/><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>')
+    return f, pad
+
+
+def write(pack, items, scale=1.44, finish="sticker"):
+    """finish: "sticker" (volume + die-cut), "pixel" (die-cut only), "volume" (no border, keeps slots exact) or None."""
     os.makedirs(os.path.join(ROOT, pack), exist_ok=True)
     out = []
     for name, (w, h, body, *slots) in items.items():
         ascii_name = unicodedata.normalize("NFKD", name).encode("ascii", "ignore").decode()
         fname = ascii_name.replace(" ", "-") + ".svg"
+        defs, pad = "", 0
+        if finish in ("sticker", "volume"):
+            defs, body = shade(body)
+        if finish in ("sticker", "pixel"):
+            f, pad = die_cut(w, h, finish == "pixel")
+            defs += f
+            body = f'<g filter="url(#cut)">{body}</g>'
+        w2, h2 = w + 2 * pad, h + 2 * pad
         with open(os.path.join(ROOT, pack, fname), "w", encoding="utf-8") as f:
-            f.write(f'<svg xmlns="http://www.w3.org/2000/svg" width="{w}" height="{h}" viewBox="0 0 {w} {h}">{body.strip()}</svg>\n')
+            f.write(f'<svg xmlns="http://www.w3.org/2000/svg" width="{w2}" height="{h2}" viewBox="{-pad} {-pad} {w2} {h2}">'
+                    f'<defs>{defs}</defs>{body.strip()}</svg>\n')
+        w, h = w2, h2
         out.append({"name": name[0].upper() + name[1:], "src": f"/stickers/{pack}/{fname}",
                     "width": round(w * scale), "height": round(h * scale), **({"slots": slots[0]} if slots and slots[0] else {})})
     return out
@@ -138,11 +194,11 @@ import json
 entries = {
     "Habitación acogedora": write("cozy", cozy),
     "Minimalista": write("minimal", minimal),
-    "Casa": write("house", furniture, 1),
-    "Pixel art": write("pixel", pixel, 2.88),
+    "Casa": write("house", furniture, 1, "volume"),
+    "Pixel art": write("pixel", pixel, 2.88, "pixel"),
     "Espacio": write("space", space),
     "Naturaleza": write("nature", nature),
-    "Neón": write("neon", neon_pack),
+    "Neón": write("neon", neon_pack, finish=None),
 }
 
 BG_ROOT = os.path.join(HERE, "..", "public", "backgrounds")

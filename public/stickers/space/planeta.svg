@@ -1,6 +1,7 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="260" height="200" viewBox="0 0 260 200"><ellipse cx="130" cy="100" rx="122" ry="34" fill="none" stroke="#2b2135" stroke-width="14"/>
+<svg xmlns="http://www.w3.org/2000/svg" width="340" height="280" viewBox="-40 -40 340 280"><defs><linearGradient id="v0" x1="0" y1="0" x2="0.35" y2="1"><stop offset="0" stop-color="#b794e1"/><stop offset=".55" stop-color="#9b6bd6"/><stop offset="1" stop-color="#845bb6"/></linearGradient><filter id="cut" x="-50%" y="-50%" width="200%" height="200%" color-interpolation-filters="sRGB"><feMorphology in="SourceAlpha" operator="dilate" radius="5.46"/><feGaussianBlur stdDeviation="3.64"/><feComponentTransfer result="d"><feFuncA type="linear" slope="8" intercept="-2"/></feComponentTransfer><feFlood flood-color="#ffffff"/><feComposite in2="d" operator="in" result="b"/><feGaussianBlur in="d" stdDeviation="8.2"/><feOffset dy="5.5" result="o"/><feFlood flood-color="#2b1d33" flood-opacity=".3"/><feComposite in2="o" operator="in" result="s"/><feMerge><feMergeNode in="s"/><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs><g filter="url(#cut)">
+<ellipse cx="130" cy="100" rx="122" ry="34" fill="none" stroke="#2b2135" stroke-width="14"/>
 <ellipse cx="130" cy="100" rx="122" ry="34" fill="none" stroke="#f3a256" stroke-width="7"/>
-<circle cx="130" cy="100" r="70" fill="#9b6bd6" stroke="#2b2135" stroke-width="4" stroke-linejoin="round" stroke-linecap="round"/>
+<circle cx="130" cy="100" r="70" fill="url(#v0)" stroke="#2b2135" stroke-width="4" stroke-linejoin="round" stroke-linecap="round"/>
 <path d="M76 80 q54 -18 108 0 M70 110 q60 16 120 0" fill="none" stroke="#c7a6f0" stroke-width="10" stroke-linecap="round"/>
 <path d="M12 100 a122 34 0 0 0 236 0" fill="none" stroke="#2b2135" stroke-width="14"/>
-<path d="M12 100 a122 34 0 0 0 236 0" fill="none" stroke="#f3a256" stroke-width="7"/></svg>
+<path d="M12 100 a122 34 0 0 0 236 0" fill="none" stroke="#f3a256" stroke-width="7"/></g></svg>

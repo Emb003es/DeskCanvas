@@ -31,6 +31,24 @@ const basics: Item[] = [
   shape("line", "Línea", "─", { height: 30, width: 300, stroke: "#ffffff", strokeWidth: 8 }),
 ];
 
+const note = (label: string, fill: string, accent: string, text: string, fontFamily = "Segoe Print"): Item => ({
+  label,
+  preview: <span className="note-chip" style={{ background: fill, ["--tape" as string]: accent }} />,
+  obj: { type: "note", text, width: 320, height: 300, rotation: -2, fontSize: 30, fontFamily, fill, accent, stroke: "#3b2f40" },
+});
+
+const notes: Item[] = [
+  note("Amarilla", "#fff3a8", "#f19cb7", "No olvidar:\n• "),
+  note("Rosa", "#ffd1dc", "#85cdca", "Ideas ✨"),
+  note("Menta", "#c9f2dc", "#f6d186", "Tareas\n☐ \n☐ "),
+  note("Cielo", "#cfe6ff", "#f3a256", "Hoy"),
+  note("Lila", "#e6d7ff", "#7fb685", "Notas"),
+  note("Melocotón", "#ffdcc2", "#c9a7e8", "Recordatorio"),
+  note("Papel", "#fffdf6", "#b8b8c8", "Querido yo del futuro…", "Segoe Script"),
+  note("Noche", "#2f2a3f", "#ff3d9a", "Modo concentración", "Bahnschrift"),
+];
+notes[notes.length - 1].obj.stroke = "#f4ecff";
+
 const packItems = Object.fromEntries(
   Object.entries(stickerPacks).map(([pack, list]) => [
     pack,
@@ -42,17 +60,34 @@ const packItems = Object.fromEntries(
   ]),
 );
 
-const tabs = ["Plantillas", ...Object.keys(packItems), "Básicos"];
+const tabs = ["Plantillas", "Notas", ...Object.keys(packItems), "Básicos"];
 
-/** Reads a user image as a data URL and its natural size, capped to 600 px. */
+/** Videos are embedded in the project as data URLs, so keep them reasonable. */
+const MAX_VIDEO = 200 * 1024 * 1024;
+
+/** Reads a user image or video as a data URL and its natural size, capped to 600 px. */
 function readImage(file: File): Promise<Partial<Obj> & Pick<Obj, "type">> {
   return new Promise((resolve, reject) => {
+    const isVideo = file.type.startsWith("video/");
+    if (isVideo && file.size > MAX_VIDEO) return reject(new Error(`${file.name}: el vídeo pasa de 200 MB`));
+    if (!isVideo && !file.type.startsWith("image/")) return reject(new Error(`${file.name}: no es una imagen ni un vídeo`));
     const r = new FileReader();
     r.onerror = () => reject(r.error);
     r.onload = () => {
       const src = String(r.result);
+      if (isVideo) {
+        const v = document.createElement("video");
+        v.preload = "metadata";
+        v.onerror = () => reject(new Error(`${file.name}: formato de vídeo no compatible (prueba MP4 o WebM)`));
+        v.onloadedmetadata = () => {
+          const k = Math.min(1, 640 / Math.max(v.videoWidth, v.videoHeight));
+          resolve({ type: "video", src, width: v.videoWidth * k, height: v.videoHeight * k });
+        };
+        v.src = src;
+        return;
+      }
       const img = new Image();
-      img.onerror = () => reject(new Error("No se pudo leer la imagen"));
+      img.onerror = () => reject(new Error(`${file.name}: formato de imagen no compatible`));
       img.onload = () => {
         const k = Math.min(1, 600 / Math.max(img.width, img.height));
         resolve({ type: "image", src, width: img.width * k, height: img.height * k });
@@ -70,7 +105,7 @@ export default function Library() {
   const notify = useStore((s) => s.notify);
   const captureGuide = useStore((s) => s.captureGuide);
   const applyTemplate = useStore((s) => s.applyTemplate);
-  const items = tab === "Básicos" ? basics : packItems[tab] ?? [];
+  const items = tab === "Básicos" ? basics : tab === "Notas" ? notes : packItems[tab] ?? [];
 
   const addCentered = (o: Item["obj"]) => doc && addObject({ ...o, x: doc.width / 2, y: doc.height / 2 });
 
@@ -79,7 +114,7 @@ export default function Library() {
       try {
         addCentered(await readImage(f));
       } catch (err) {
-        notify(String(err), true);
+        notify(String((err as Error).message ?? err), true);
       }
     }
     e.target.value = "";
@@ -137,8 +172,8 @@ export default function Library() {
         ))}
       </div>
       <label className="import">
-        ＋ Importar mis imágenes
-        <input type="file" accept="image/png,image/jpeg,image/webp,image/gif,image/svg+xml" multiple hidden onChange={onImport} />
+        ＋ Importar imágenes o vídeos
+        <input type="file" accept="image/*,video/*" multiple hidden onChange={onImport} />
       </label>
       <button
         className="import capture"
